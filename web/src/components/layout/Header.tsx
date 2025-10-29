@@ -1,6 +1,5 @@
 "use client";
-
-import Link from "next/link";
+import { Link, useLocation } from "react-router-dom";
 import { useTheme } from "@/store/useTheme";
 
 export function Header() {
@@ -9,10 +8,12 @@ export function Header() {
   const setTheme = useTheme((s) => s.setTheme);
   // 固定 Twitter/X 关注账号
   const TWITTER_HANDLE = "wquguru";
-  const barCls = `sticky top-0 z-50 w-full border-b backdrop-blur`;
+  const barCls = `sticky top-0 z-50 w-full border-b-2 backdrop-blur`; /* 改为2px粗边框 */
   const textCls = "";
   const hoverLink = "";
   const brandCls = "";
+
+  const location = useLocation();
 
   return (
     <header
@@ -29,41 +30,38 @@ export function Header() {
         {/* 左：品牌 */}
         <div className="flex min-w-0 flex-1">
           <Link
-            href="/"
-            className={`font-semibold tracking-wide ui-sans`}
-            style={{ color: "var(--brand-accent)" }}
+            to="/"
+            className="font-semibold tracking-wide ui-sans text-base" /* 增大字体 */
+            style={{ color: "var(--brand-accent)", textDecoration: "none" }}
           >
             nof0
           </Link>
         </div>
 
-        {/* 中：主导航（绝对居中） */}
+        {/* 中:主导航(绝对居中) - 移除边框 */}
         <nav
-          className="ui-sans absolute left-1/2 -translate-x-1/2 flex items-center gap-6"
+          className="ui-sans absolute left-1/2 -translate-x-1/2 flex items-center"
           aria-label="Primary"
+          style={{ fontSize: "16px" }}
         >
-          <Link href="/" className={hoverLink} style={{ color: "inherit" }}>
-            实盘
-          </Link>
-          <Link
-            href="/leaderboard"
-            className={hoverLink}
-            style={{ color: "inherit" }}
-          >
-            排行榜
-          </Link>
-          <Link
-            href="/models"
-            className={hoverLink}
-            style={{ color: "inherit" }}
-          >
-            模型
-          </Link>
+          <NavItem to="/" label="实盘" currentPath={location.pathname} />
+          <span style={{ color: "#d0d0d0", margin: "0 8px" }}>|</span>
+          <NavItem
+            to="/leaderboard"
+            label="排行榜"
+            currentPath={location.pathname}
+          />
+          <span style={{ color: "#d0d0d0", margin: "0 8px" }}>|</span>
+          <NavItem
+            to="/models"
+            label="模型"
+            currentPath={location.pathname}
+          />
         </nav>
 
         {/* 右：主题切换占位，保证中间绝对定位不受挤压 */}
         <div className="flex min-w-0 flex-1 justify-end">
-          {/* 右侧：外链 + 主题切换 */}
+          {/* 右侧：外链 */}
           <div className="flex items-center gap-2">
             {/* GitHub */}
             <a
@@ -71,9 +69,8 @@ export function Header() {
               target="_blank"
               rel="noopener noreferrer"
               aria-label="Open GitHub repository"
-              className="inline-flex items-center justify-center w-7 h-7 rounded border chip-btn"
+              className="inline-flex items-center justify-center w-7 h-7"
               style={{
-                borderColor: "var(--chip-border)",
                 color: "var(--btn-inactive-fg)",
               }}
               title="GitHub"
@@ -95,9 +92,8 @@ export function Header() {
               target="_blank"
               rel="noopener noreferrer"
               aria-label="Follow on X (Twitter)"
-              className="inline-flex items-center justify-center w-7 h-7 rounded border chip-btn"
+              className="inline-flex items-center justify-center w-7 h-7"
               style={{
-                borderColor: "var(--chip-border)",
                 color: "var(--btn-inactive-fg)",
               }}
               title="Follow on X"
@@ -114,31 +110,6 @@ export function Header() {
               </svg>
             </a>
           </div>
-          <div className="ml-2 hidden sm:flex items-center gap-1 text-[11px]">
-            <div
-              className={`flex overflow-hidden rounded border`}
-              style={{ borderColor: "var(--chip-border)" }}
-            >
-              {["dark", "light", "system"].map((t) => (
-                <button
-                  key={t}
-                  title={t}
-                  className={`px-2 py-1 capitalize chip-btn`}
-                  style={
-                    theme === t
-                      ? {
-                          background: "var(--btn-active-bg)",
-                          color: "var(--btn-active-fg)",
-                        }
-                      : { color: "var(--btn-inactive-fg)" }
-                  }
-                  onClick={() => setTheme(t as any)}
-                >
-                  {t}
-                </button>
-              ))}
-            </div>
-          </div>
         </div>
       </div>
     </header>
@@ -146,3 +117,30 @@ export function Header() {
 }
 
 export default Header;
+
+function NavItem({
+  to,
+  label,
+  currentPath,
+}: {
+  to: string;
+  label: string;
+  currentPath: string;
+}) {
+  const isActive =
+    currentPath === to || (to !== "/" && currentPath.startsWith(to));
+  return (
+    <Link
+      to={to}
+      className={`ui-sans px-4 py-2 uppercase tracking-wider`}
+      style={{
+        color: "inherit",
+        textDecoration: "none",
+        fontWeight: isActive ? 600 : 400,
+        fontSize: "inherit",
+      }}
+    >
+      {label}
+    </Link>
+  );
+}

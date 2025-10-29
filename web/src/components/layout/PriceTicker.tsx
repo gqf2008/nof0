@@ -1,17 +1,17 @@
 "use client";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useMemo } from "react";
 import { useCryptoPrices } from "@/lib/api/hooks/useCryptoPrices";
+import { useAccountTotals } from "@/lib/api/hooks/useAccountTotals";
 import { fmtUSD } from "@/lib/utils/formatters";
-import { useTheme } from "@/store/useTheme";
+import { getModelName } from "@/lib/model/meta";
+import { ModelLogoChip } from "@/components/shared/ModelLogo";
 
 const ORDER = ["BTC", "ETH", "SOL", "BNB", "DOGE", "XRP"] as const;
 
 export default function PriceTicker() {
   const { prices } = useCryptoPrices();
-  const wrapRef = useRef<HTMLDivElement | null>(null);
-  const trackRef = useRef<HTMLDivElement | null>(null);
-  const [loop, setLoop] = useState(false);
-  // use CSS variables instead of theme branching
+  const { data } = useAccountTotals();
+
   const list = useMemo(() => {
     const vals = Object.values(prices);
     return ORDER.map((s) => vals.find((v) => v.symbol === s)).filter(
@@ -19,66 +19,120 @@ export default function PriceTicker() {
     ) as typeof vals;
   }, [prices]);
 
-  useEffect(() => {
-    const wrap = wrapRef.current;
-    const track = trackRef.current;
-    if (!wrap || !track) return;
-    const check = () => {
-      const need = track.scrollWidth > wrap.clientWidth + 8;
-      setLoop(need);
-    };
-    check();
-    const ro = new ResizeObserver(check);
-    ro.observe(wrap);
-    ro.observe(track);
-    return () => ro.disconnect();
-  }, [list]);
+  const { highest, lowest } = useMemo(() => {
+    if (!data?.accountTotals?.length) return { highest: null, lowest: null };
+    
+    const rows = data.accountTotals;
+    let highest = rows[0];
+    let lowest = rows[0];
+    
+    for (const row of rows) {
+      const highestValue = highest.account_value ?? 0;
+      const lowestValue = lowest.account_value ?? 0;
+      const currentValue = row.account_value ?? 0;
+      
+      if (currentValue > highestValue) {
+        highest = row;
+      }
+      if (currentValue < lowestValue) {
+        lowest = row;
+      }
+    }
+    
+    return { highest, lowest };
+  }, [data]);
 
   return (
     <div
-      className={`w-full border-b h-[var(--ticker-h)]`}
+      className={`w-full h-[var(--ticker-h)] border-b-2`}
       style={{
-        borderColor: "var(--panel-border)",
         background: "var(--panel-bg)",
+        borderColor: "var(--panel-border)",
       }}
     >
-      <div ref={wrapRef} className="h-full overflow-hidden px-3">
-        {loop ? (
-          <div className="relative h-full">
-            <div
-              ref={trackRef}
-              className="ticker-track absolute left-0 top-0 flex h-full items-center gap-6 whitespace-nowrap text-xs leading-relaxed"
-              style={{ color: "var(--foreground)" }}
-            >
-              {renderItems(list)}
-              {renderItems(list)}
-            </div>
-          </div>
-        ) : (
-          <div
-            ref={trackRef}
-            className="terminal-text flex h-full items-center gap-6 whitespace-nowrap text-xs leading-relaxed"
-            style={{ color: "var(--foreground)", overflowX: "auto" as any }}
-          >
-            {renderItems(list)}
+      <div className="h-full overflow-x-auto overflow-y-hidden px-3 flex items-center justify-between">
+        <div className="flex items-center">
+          {list.map((p, idx) => (
+            <>
+              <div
+                key={p.symbol}
+                className="ticker-item inline-flex items-center gap-2 px-3 py-2"
+              >
+                {/* coin icon */}
+                <img
+                  src={`/coins/${String(p.symbol || "").toLowerCase()}.svg`}
+                  alt={p.symbol}
+                  width={18}
+                  height={18}
+                  style={{ display: "block" }}
+                />
+                <div className="flex flex-col justify-center">
+                  <span className="text-[11px] font-semibold leading-tight" style={{ color: "var(--muted-text)" }}>
+                    {p.symbol}
+                  </span>
+                  <span className="text-[12px] font-semibold leading-tight" style={{ color: "var(--foreground)" }}>
+                    {fmtUSD(p.price)}
+                  </span>
+                </div>
+              </div>
+              {idx < list.length - 1 && (
+                <span style={{ color: "#d0d0d0", margin: "0 4px" }}>|</span>
+              )}
+            </>
+          ))}
+        </div>
+        
+        {/* 最高和最低收益率 */}
+        {(highest || lowest) && (
+          <div className="flex items-center gap-4 px-3 whitespace-nowrap">
+            {highest && (
+              <div className="flex items-center gap-2">
+                <span className="text-[11px] font-semibold uppercase" style={{ color: "var(--muted-text)" }}>
+                  HIGHEST:
+                </span>
+                <ModelLogoChip modelId={highest.model_id} size="sm" />
+                <span className="text-[11px] font-semibold uppercase" style={{ color: "var(--foreground)" }}>
+                  {getModelName(highest.model_id)}
+                </span>
+                <span className="text-[11px] font-semibold" style={{ color: "var(--foreground)" }}>
+                  {fmtUSD(highest.account_value ?? 0)}
+                </span>
+                <span 
+                  className="text-[11px] font-semibold" 
+                  style={{ 
+                    color: (highest.return_pct ?? 0) >= 0 ? "#16a34a" : "#dc2626"
+                  }}
+                >
+                  {(highest.return_pct ?? 0) >= 0 ? "+" : ""}{((highest.return_pct ?? 0) * 100).toFixed(2)}%
+                </span>
+              </div>
+            )}
+            <span style={{ color: "#d0d0d0" }}>|</span>
+            {lowest && (
+              <div className="flex items-center gap-2">
+                <span className="text-[11px] font-semibold uppercase" style={{ color: "var(--muted-text)" }}>
+                  LOWEST:
+                </span>
+                <ModelLogoChip modelId={lowest.model_id} size="sm" />
+                <span className="text-[11px] font-semibold uppercase" style={{ color: "var(--foreground)" }}>
+                  {getModelName(lowest.model_id)}
+                </span>
+                <span className="text-[11px] font-semibold" style={{ color: "var(--foreground)" }}>
+                  {fmtUSD(lowest.account_value ?? 0)}
+                </span>
+                <span 
+                  className="text-[11px] font-semibold" 
+                  style={{ 
+                    color: (lowest.return_pct ?? 0) >= 0 ? "#16a34a" : "#dc2626"
+                  }}
+                >
+                  {(lowest.return_pct ?? 0) >= 0 ? "+" : ""}{((lowest.return_pct ?? 0) * 100).toFixed(2)}%
+                </span>
+              </div>
+            )}
           </div>
         )}
       </div>
     </div>
   );
-}
-
-function renderItems(list: { symbol: string; price: number }[]) {
-  return list.map((p) => (
-    <span
-      key={`${p.symbol}-${Math.random()}`}
-      className={`tabular-nums`}
-      style={{ color: "var(--muted-text)" }}
-    >
-      <b className={`mr-1`} style={{ color: "var(--foreground)" }}>
-        {p.symbol}
-      </b>
-      {fmtUSD(p.price)}
-    </span>
-  ));
 }

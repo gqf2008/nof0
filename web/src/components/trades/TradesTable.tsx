@@ -1,7 +1,7 @@
 "use client";
 import { useMemo } from "react";
 import { useTrades } from "@/lib/api/hooks/useTrades";
-import { useSearchParams, useRouter, usePathname } from "next/navigation";
+import { useSearchParams } from "react-router-dom";
 import { fmtUSD } from "@/lib/utils/formatters";
 import ErrorBanner from "@/components/ui/ErrorBanner";
 import { SkeletonRow } from "@/components/ui/Skeleton";
@@ -11,9 +11,7 @@ import type { TradeRow } from "@/lib/api/hooks/useTrades";
 
 export default function TradesTable() {
   const { trades, isLoading, isError } = useTrades();
-  const search = useSearchParams();
-  const router = useRouter();
-  const pathname = usePathname();
+  const [search, setSearch] = useSearchParams();
 
   const qModel = (search.get("model") || "ALL").toLowerCase();
 
@@ -43,7 +41,7 @@ export default function TradesTable() {
 
   return (
     <div
-      className={`rounded-md border terminal-text text-[13px] sm:text-xs leading-relaxed`}
+      className={`mt-3 rounded-md border terminal-text text-[13px] sm:text-xs leading-relaxed`}
       style={{
         background: "var(--panel-bg)",
         borderColor: "var(--panel-border)",
@@ -65,10 +63,10 @@ export default function TradesTable() {
             筛选：
           </span>
           <select
-            className="rounded border px-2 py-1 text-xs"
+            className="rounded px-2 py-1 text-xs"
             style={{
               background: "var(--panel-bg)",
-              borderColor: "var(--panel-border)",
+              border: "1px solid var(--panel-border)",
               color: "var(--foreground)",
             }}
             value={search.get("model") || "ALL"}
@@ -123,7 +121,9 @@ export default function TradesTable() {
     const params = new URLSearchParams(search.toString());
     if (v === "ALL") params.delete(k);
     else params.set(k, v);
-    router.replace(`${pathname}?${params.toString()}`);
+    const next = params.toString();
+    if (next) setSearch(params, { replace: true });
+    else setSearch({}, { replace: true });
   }
 }
 

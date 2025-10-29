@@ -1,6 +1,6 @@
 "use client";
 import { useMemo } from "react";
-import Link from "next/link";
+import { Link } from "react-router-dom";
 import { useLatestEquityMap } from "@/lib/api/hooks/useModelSnapshots";
 import { getModelColor, getModelIcon, getModelName } from "@/lib/model/meta";
 import { adjustLuminance } from "@/lib/ui/useDominantColors";
@@ -66,7 +66,7 @@ function renderChip(id: string, activeId?: string, equity?: number) {
   return (
     <Link
       key={id}
-      href={`/models/${encodeURIComponent(id)}`}
+      to={`/models/${encodeURIComponent(id)}`}
       className={`w-full inline-flex flex-col items-center justify-center gap-1 rounded border px-2.5 py-2 text-[12px] sm:text-[13px] chip-btn`}
       style={{
         borderColor: "var(--chip-border)",
@@ -84,7 +84,6 @@ function renderChip(id: string, activeId?: string, equity?: number) {
               borderColor: adjustLuminance(color, -0.2),
             }}
           >
-            {/* eslint-disable-next-line @next/next/no-img-element */}
             <img src={icon} alt="" className="h-3 w-3 object-contain" />
           </span>
         ) : (

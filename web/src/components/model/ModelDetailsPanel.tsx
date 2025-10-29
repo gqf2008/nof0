@@ -1,6 +1,6 @@
 "use client";
 import { useMemo } from "react";
-import { useSearchParams } from "next/navigation";
+import { useSearchParams } from "react-router-dom";
 import { useAccountTotals } from "@/lib/api/hooks/useAccountTotals";
 import { usePositions } from "@/lib/api/hooks/usePositions";
 import { useTrades } from "@/lib/api/hooks/useTrades";
@@ -14,7 +14,7 @@ export default function ModelDetailsPanel({
   modelId?: string;
 }) {
   // Use CSS variables via styles instead of theme branching
-  const search = useSearchParams();
+  const [search] = useSearchParams();
   const urlModel = search.get("model") || undefined;
   const modelId = (propModelId || urlModel || "").trim();
 

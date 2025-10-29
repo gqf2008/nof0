@@ -1,7 +1,6 @@
 "use client";
-import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { useMemo } from "react";
-import { useTheme } from "@/store/useTheme";
+import { useSearchParams } from "react-router-dom";
 
 const SIDES = ["ALL", "LONG", "SHORT"] as const;
 
@@ -13,9 +12,7 @@ export default function PositionsFilter({
   symbols: string[];
 }) {
   // Use CSS variables in styles instead of theme branching
-  const search = useSearchParams();
-  const router = useRouter();
-  const pathname = usePathname();
+  const [search, setSearch] = useSearchParams();
 
   const model = search.get("model") || "ALL";
   const symbol = search.get("symbol") || "ALL";
@@ -30,12 +27,14 @@ export default function PositionsFilter({
       if (!v || v === "ALL") params.delete(k);
       else params.set(k, v);
     }
-    router.replace(`${pathname}?${params.toString()}`);
+    const nextSearch = params.toString();
+    if (nextSearch) setSearch(params, { replace: true });
+    else setSearch({}, { replace: true });
   }
 
   return (
     <div
-      className={`mb-2 flex flex-wrap items-center gap-2 text-[11px]`}
+      className={`pb-3 flex flex-wrap items-center gap-2 text-xs`}
       style={{ color: "var(--muted-text)" }}
     >
       <Select
@@ -75,9 +74,9 @@ function Select({
     <label className="flex items-center gap-1">
       <span style={{ color: "var(--muted-text)" }}>{label}</span>
       <select
-        className={`rounded border px-2 py-1 text-xs`}
+        className={`px-2 py-1 text-xs`}
         style={{
-          borderColor: "var(--panel-border)",
+          border: "1px solid var(--panel-border)",
           background: "var(--panel-bg)",
           color: "var(--foreground)",
         }}

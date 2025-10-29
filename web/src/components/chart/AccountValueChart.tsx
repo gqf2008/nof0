@@ -390,73 +390,75 @@ export default function AccountValueChart() {
   const refLine = "var(--ref-line)" as const;
 
   return (
-    <div
-      className={`flex h-full min-h-[260px] sm:min-h-[300px] flex-col rounded-md border p-3`}
-      style={{
-        background: "var(--panel-bg)",
-        borderColor: "var(--panel-border)",
-      }}
-    >
-      <div className="mb-2 flex items-center justify-between">
+    <>
+      {/* Control buttons outside the chart */}
+      <div className="m-2 flex items-center justify-between gap-2 text-[11px]">
         <div
-          className={`text-xs font-semibold tracking-wider`}
-          style={{ color: "var(--muted-text)" }}
+          className={`flex overflow-hidden`}
+          style={{ border: "2px solid var(--chip-border)" }}
         >
-          账户总资产
+          {(["$", "%"] as Mode[]).map((m) => (
+            <button
+              key={m}
+              className={`px-2 py-1`}
+              style={
+                mode === m
+                  ? {
+                      background: "var(--btn-active-bg)",
+                      color: "var(--btn-active-fg)",
+                      border: "none",
+                    }
+                  : { color: "var(--btn-inactive-fg)", border: "none" }
+              }
+              onClick={() => setMode(m)}
+            >
+              {m}
+            </button>
+          ))}
         </div>
-        {/* Small top-right range/unit toggles */}
-        <div className="hidden sm:flex items-center gap-2 text-[11px]">
-          <div
-            className={`flex overflow-hidden rounded border`}
-            style={{ borderColor: "var(--chip-border)" }}
-          >
-            {(["ALL", "72H"] as Range[]).map((r) => (
-              <button
-                key={r}
-                className={`px-2 py-1 chip-btn`}
-                style={
-                  range === r
-                    ? {
-                        background: "var(--btn-active-bg)",
-                        color: "var(--btn-active-fg)",
-                      }
-                    : { color: "var(--btn-inactive-fg)" }
-                }
-                onClick={() => setRange(r)}
-              >
-                {r}
-              </button>
-            ))}
-          </div>
-          <div
-            className={`flex overflow-hidden rounded border`}
-            style={{ borderColor: "var(--chip-border)" }}
-          >
-            {(["$", "%"] as Mode[]).map((m) => (
-              <button
-                key={m}
-                className={`px-2 py-1 chip-btn`}
-                style={
-                  mode === m
-                    ? {
-                        background: "var(--btn-active-bg)",
-                        color: "var(--btn-active-fg)",
-                      }
-                    : { color: "var(--btn-inactive-fg)" }
-                }
-                onClick={() => setMode(m)}
-              >
-                {m}
-              </button>
-            ))}
-          </div>
+        <div
+          className={`flex overflow-hidden`}
+          style={{ border: "2px solid var(--chip-border)" }}
+        >
+          {(["ALL", "72H"] as Range[]).map((r) => (
+            <button
+              key={r}
+              className={`px-2 py-1`}
+              style={
+                range === r
+                  ? {
+                      background: "var(--btn-active-bg)",
+                      color: "var(--btn-active-fg)",
+                      border: "none",
+                    }
+                  : { color: "var(--btn-inactive-fg)", border: "none" }
+              }
+              onClick={() => setRange(r)}
+            >
+              {r}
+            </button>
+          ))}
         </div>
       </div>
-      {/* Legend below chart */}
-      <ErrorBanner
-        message={isError ? "账户价值数据源暂时不可用，请稍后重试。" : undefined}
-      />
-      <div className="w-full flex-1 min-h-0 flex flex-col">
+      <div
+        className={`flex flex-1 min-h-[260px] sm:min-h-[300px] flex-col`}
+        style={{
+          background: "var(--panel-bg)",
+        }}
+      >
+        <div className="flex items-center justify-between">
+          <div
+            className={`text-xs font-semibold tracking-wider uppercase`}
+            style={{ color: "var(--muted-text)" }}
+          >
+            TOTAL ACCOUNT VALUE
+          </div>
+        </div>
+        {/* Legend below chart */}
+        <ErrorBanner
+          message={isError ? "账户价值数据源暂时不可用，请稍后重试。" : undefined}
+        />
+        <div className="w-full flex-1 min-h-0 flex flex-col">
         {isLoading ? (
           <SkeletonBlock className="h-full" />
         ) : data.length >= 2 ? (
@@ -526,11 +528,13 @@ export default function AccountValueChart() {
                           ? format(v, "yyyy-MM-dd HH:mm")
                           : String(v)
                       }
-                      formatter={(val: number) =>
-                        mode === "%"
+                      formatter={(val: number, name: string) => {
+                        const formattedValue = mode === "%"
                           ? `${Number(val).toFixed(2)}%`
-                          : `$${Number(val).toFixed(2)}`
-                      }
+                          : `$${Number(val).toFixed(2)}`;
+                        const displayName = getModelName(name);
+                        return [formattedValue, displayName];
+                      }}
                     />
                     {mode === "$" ? (
                       <ReferenceLine
@@ -587,7 +591,7 @@ export default function AccountValueChart() {
             </div>
             {/* Bottom legend inside chart area flow */}
             {models.length > 0 && (
-              <div className="mt-3">
+              <div className="-mx-2 mb-2 px-2 pt-2 border-t-2" style={{ borderColor: "var(--panel-border)" }}>
                 {/* Small screens: horizontal scrollable legend */}
                 <div className="block md:hidden">
                   <div
@@ -600,15 +604,14 @@ export default function AccountValueChart() {
                       return (
                         <button
                           key={id}
-                          className={`inline-flex min-w-[120px] flex-shrink-0 flex-col items-center justify-center gap-1 rounded border px-2.5 py-2 text-[12px] chip-btn`}
+                          className={`inline-flex min-w-[120px] flex-shrink-0 flex-col items-center justify-center gap-1 px-2.5 py-2 text-[12px] chip-btn`}
                           style={{
-                            borderColor: "var(--chip-border)",
-                            background: activeOn
-                              ? "var(--btn-active-bg)"
-                              : "transparent",
+                            border: "1px solid var(--chip-border)",
+                            background: "transparent",
                             color: activeOn
-                              ? "var(--btn-active-fg)"
+                              ? "var(--foreground)"
                               : "var(--btn-inactive-fg)",
+                            opacity: activeOn ? 1 : 0.5,
                           }}
                           onClick={() => {
                             setActive((prev) => {
@@ -677,15 +680,14 @@ export default function AccountValueChart() {
                       return (
                         <button
                           key={id}
-                          className={`w-full group inline-flex flex-col items-center justify-center gap-1 rounded border px-2.5 py-2 text-[12px] sm:text-[13px] chip-btn`}
+                          className={`w-full group inline-flex flex-col items-center justify-center gap-1 px-2.5 py-2 text-[12px] sm:text-[13px] chip-btn`}
                           style={{
-                            borderColor: "var(--chip-border)",
-                            background: activeOn
-                              ? "var(--btn-active-bg)"
-                              : "transparent",
+                            border: "1px solid var(--chip-border)",
+                            background: "transparent",
                             color: activeOn
-                              ? "var(--btn-active-fg)"
+                              ? "var(--foreground)"
                               : "var(--btn-inactive-fg)",
+                            opacity: activeOn ? 1 : 0.5,
                           }}
                           onClick={() => {
                             setActive((prev) => {
@@ -773,6 +775,7 @@ export default function AccountValueChart() {
           </div>
         )}
       </div>
-    </div>
+      </div>
+    </>
   );
 }

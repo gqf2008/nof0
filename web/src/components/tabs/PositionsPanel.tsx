@@ -8,7 +8,7 @@ import ErrorBanner from "@/components/ui/ErrorBanner";
 import { SkeletonRow } from "@/components/ui/Skeleton";
 import { useAccountTotals } from "@/lib/api/hooks/useAccountTotals";
 import PositionsFilter from "@/components/positions/PositionsFilter";
-import { useSearchParams } from "next/navigation";
+import { useSearchParams } from "react-router-dom";
 import { getModelColor, getModelName } from "@/lib/model/meta";
 import { ModelLogoChip } from "@/components/shared/ModelLogo";
 import CoinIcon from "@/components/shared/CoinIcon";
@@ -27,7 +27,7 @@ export function PositionsPanel() {
   const { data: totalsData } = useAccountTotals();
   const [sortKey, setSortKey] = useState<SortKey>("unrealized_pnl");
   const [sortDir, setSortDir] = useState<"asc" | "desc">("desc");
-  const search = useSearchParams();
+  const [search] = useSearchParams();
   const qModel = (search.get("model") || "ALL").toLowerCase();
   const qSymbol = (search.get("symbol") || "ALL").toUpperCase();
   const qSide = (search.get("side") || "ALL").toUpperCase();
@@ -65,7 +65,7 @@ export function PositionsPanel() {
   }
 
   return (
-    <div className="space-y-3">
+    <div className="pt-3 divide-y" style={{ borderColor: "var(--grid-stroke)" }}>
       <ErrorBanner
         message={isError ? "上游持仓接口暂时不可用，请稍后重试。" : undefined}
       />
@@ -151,11 +151,7 @@ export function PositionsPanel() {
           return (
             <div
               key={m.id}
-              className={`rounded-md border p-3`}
-              style={{
-                background: brandBg as any,
-                borderColor: brandBorder as any,
-              }}
+              className={`p-3`}
             >
               <div className="mb-2 flex items-center justify-between">
                 <div className="flex items-center gap-2">

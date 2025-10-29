@@ -1,6 +1,5 @@
 "use client";
-import { useSearchParams, useRouter, usePathname } from "next/navigation";
-import { useTheme } from "@/store/useTheme";
+import { useSearchParams } from "react-router-dom";
 
 export default function TabButton({
   name,
@@ -12,34 +11,35 @@ export default function TabButton({
   disabled?: boolean;
 }) {
   // rely on theme CSS variables
-  const search = useSearchParams();
-  const router = useRouter();
-  const pathname = usePathname();
-  const tab = search.get("tab") || "positions";
+  const [searchParams, setSearchParams] = useSearchParams();
+  const tab = searchParams.get("tab") || "positions";
   const active = tabKey ? tab === tabKey : false;
   return (
     <button
       onClick={() => {
         if (disabled || !tabKey) return;
-        const params = new URLSearchParams(search.toString());
+        const params = new URLSearchParams(searchParams.toString());
         if (tabKey === "positions") params.delete("tab");
         else params.set("tab", tabKey);
-        router.replace(`${pathname}?${params.toString()}`);
+        const next = params.toString();
+        if (next) setSearchParams(params, { replace: true });
+        else setSearchParams({}, { replace: true });
       }}
       aria-disabled={disabled}
-      className={`rounded border px-2 py-1 chip-btn ${disabled ? "cursor-not-allowed" : ""}`}
+      className={`flex-1 px-3 py-1.5 text-xs border-r-2 last:border-r-0 ${disabled ? "cursor-not-allowed" : ""}`}
       style={{
         borderColor: "var(--panel-border)",
         background: disabled
           ? "transparent"
           : active
-            ? "var(--btn-active-bg)"
+            ? "#000000"
             : "transparent",
         color: disabled
           ? "var(--muted-text)"
           : active
-            ? "var(--btn-active-fg)"
+            ? "#ffffff"
             : "var(--btn-inactive-fg)",
+        fontWeight: active ? 600 : 400,
       }}
       type="button"
     >

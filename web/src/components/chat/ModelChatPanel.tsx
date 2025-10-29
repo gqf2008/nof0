@@ -1,7 +1,7 @@
 "use client";
 import { useConversations } from "@/lib/api/hooks/useConversations";
-import { useSearchParams, useRouter, usePathname } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
+import { useSearchParams } from "react-router-dom";
 import { getModelName, getModelColor, getModelMeta } from "@/lib/model/meta";
 import { ModelLogoChip } from "@/components/shared/ModelLogo";
 // theme handled via CSS variables
@@ -10,9 +10,7 @@ import remarkGfm from "remark-gfm";
 
 export default function ModelChatPanel() {
   const { items, isLoading, isError } = useConversations();
-  const search = useSearchParams();
-  const router = useRouter();
-  const pathname = usePathname();
+  const [search, setSearch] = useSearchParams();
   const qModel = (search.get("model") || "ALL").trim();
   // use CSS variables for colors instead of theme branching
 
@@ -70,7 +68,7 @@ export default function ModelChatPanel() {
     );
 
   return (
-    <div className="space-y-3">
+    <div className="mt-3 space-y-3">
       <FilterBar
         model={qModel}
         onChange={(v) => setModel(v)}
@@ -99,7 +97,9 @@ export default function ModelChatPanel() {
     const params = new URLSearchParams(search.toString());
     if (!v || v === "ALL") params.delete("model");
     else params.set("model", v);
-    router.replace(`${pathname}?${params.toString()}`);
+    const next = params.toString();
+    if (next) setSearch(params, { replace: true });
+    else setSearch({}, { replace: true });
   }
 }
 
@@ -130,9 +130,9 @@ function FilterBar({
     >
       <span className={`ui-sans font-semibold tracking-wide`}>筛选：</span>
       <select
-        className={`rounded border px-2 py-1 text-xs`}
+        className={`rounded px-2 py-1 text-xs`}
         style={{
-          borderColor: "var(--panel-border)",
+          border: "1px solid var(--panel-border)",
           background: "var(--panel-bg)",
           color: "var(--foreground)",
         }}
@@ -195,9 +195,9 @@ function ChatCard({
           <ModelLogoChip modelId={modelId} size="md" />
         </div>
         <div
-          className="relative rounded-md border px-3 py-2 pb-6"
+          className="relative rounded-lg px-3 py-2 pb-6"
           style={{
-            borderColor: `${color}66`,
+            border: `1px solid ${color}66`,
             background: `linear-gradient(0deg, ${color}10, var(--panel-bg))`,
           }}
         >

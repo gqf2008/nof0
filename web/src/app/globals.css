@@ -1,11 +1,17 @@
 @import "tailwindcss";
 
 :root {
-  /* default to dark theme */
-  --background: #0a0a0a;
-  --foreground: #ededed;
-  --header-h: 40px;
-  --ticker-h: 28px;
+  --font-geist-sans: "Geist", "Inter", "Segoe UI", system-ui, -apple-system,
+    BlinkMacSystemFont, "Helvetica Neue", Arial, sans-serif;
+  --font-geist-mono: "Geist Mono", "IBM Plex Mono", ui-monospace, SFMono-Regular,
+    Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+  --font-plex-mono: "IBM Plex Mono", ui-monospace, SFMono-Regular, Menlo, Monaco,
+    Consolas, "Liberation Mono", "Courier New", monospace;
+  /* default to light theme - 白底黑字粗线条 */
+  --background: #f5f5f5;
+  --foreground: #000000;
+  --header-h: 56px;
+  --ticker-h: 56px; /* 增加高度避免滚动条 */
   /* Theme-aware logo chips (light defaults) */
   --chart-logo-bg: rgba(255, 255, 255, 0.9);
   --chart-logo-ring: rgba(255, 255, 255, 0.28);
@@ -31,29 +37,33 @@
   --skeleton-bg: rgba(255, 255, 255, 0.1);
   --watermark-color: rgba(255, 255, 255, 0.06);
 
-  /* Chart/UI themed variables (dark defaults) */
-  --panel-bg: #0a0a0a;
-  --panel-border: rgba(255, 255, 255, 0.1);
-  --muted-text: #a1a1aa; /* zinc-400 */
-  --axis-tick: #a1a1aa;
-  --grid-stroke: rgba(255, 255, 255, 0.08);
-  --ref-line: #a1a1aa;
-  --chip-border: rgba(255, 255, 255, 0.15);
-  --btn-active-bg: rgba(255, 255, 255, 0.1);
-  --btn-active-fg: #e4e4e7; /* zinc-200 */
-  --btn-inactive-fg: #d4d4d8; /* zinc-300 */
-  --btn-hover-bg: rgba(255, 255, 255, 0.05);
-  --tooltip-bg: #09090b;
-  --tooltip-border: rgba(255, 255, 255, 0.1);
-  --tooltip-fg: #e4e4e7;
+  /* Chart/UI themed variables - 匹配nof1.ai样式 */
+  --panel-bg: #ffffff;
+  --panel-border: #000000; /* 纯黑边框 */
+  --panel-border-width: 1px; /* 边框宽度 */
+  --muted-text: #666666;
+  --axis-tick: #999999; /* 图表坐标轴用灰色 */
+  --grid-stroke: rgba(0, 0, 0, 0.1); /* 图表网格线用淡灰色 */
+  --ref-line: #cccccc; /* 参考线用浅灰色 */
+  --chip-border: #000000; /* 按钮边框纯黑 */
+  --btn-active-bg: #000000; /* 激活状态纯黑背景 */
+  --btn-active-fg: #ffffff; /* 激活状态白色文字 */
+  --btn-inactive-fg: #000000; /* 未激活状态黑色文字 */
+  --btn-hover-bg: rgba(0, 0, 0, 0.05);
+  --tooltip-bg: #ffffff;
+  --tooltip-border: #000000; /* tooltip边框纯黑 */
+  --tooltip-fg: #000000;
+  --surface: #ffffff; /* 匹配nof1.ai */
+  --surface-elevated: #f8f9fa;
+  --surface-hover: #f1f3f4;
   /* Header/branding */
-  --brand-accent: #c084fc; /* purple-300 */
+  --brand-accent: #0000ff; /* 匹配nof1.ai蓝色 */
 
   /* Chart series hover states */
   --series-opacity-normal: 1;
   --series-opacity-dimmed: 0.2;
-  --header-bg: rgba(0, 0, 0, 0.7);
-  --header-border: rgba(255, 255, 255, 0.1);
+  --header-bg: #f5f5f5;
+  --header-border: #000000; /* 纯黑边框 */
 }
 
 @theme inline {
@@ -61,11 +71,14 @@
   --color-foreground: var(--foreground);
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
+  --radius-sm: 4px;
+  --radius-md: 6px;
+  --radius-lg: 8px;
 }
 
 /* Ticker loop animation for overflowing price list (mobile friendly) */
 .ticker-track {
-  animation: ticker-scroll 22s linear infinite;
+  animation: ticker-scroll 30s linear infinite; /* 调慢速度 */
   will-change: transform;
 }
 @keyframes ticker-scroll {
@@ -75,6 +88,38 @@
   100% {
     transform: translateX(-50%);
   }
+}
+
+/* 价格垂直滚动动画 - 每个货币独立上下滚动 */
+.price-scroll-container {
+  display: flex;
+  flex-direction: column;
+  animation: price-scroll-vertical 3s linear infinite;
+}
+
+.price-scroll-item {
+  height: 24px;
+  flex-shrink: 0;
+}
+
+@keyframes price-scroll-vertical {
+  0% {
+    transform: translateY(0);
+  }
+  100% {
+    transform: translateY(-24px); /* 向上滚动一个item的高度 */
+  }
+}
+
+/* ticker item box */
+.ticker-item {
+  min-width: 92px;
+  text-align: center;
+}
+
+.ticker-item img {
+  display: block;
+  margin: 0 auto;
 }
 
 /* explicit theme overrides via data-theme */
@@ -88,32 +133,32 @@
   --skeleton-bg: rgba(0, 0, 0, 0.1);
   --watermark-color: rgba(0, 0, 0, 0.06);
 
-  /* light theme overrides */
+  /* light theme overrides - 黑白粗线条风格 */
   --panel-bg: #ffffff;
-  --panel-border: rgba(0, 0, 0, 0.1);
-  --muted-text: #52525b; /* zinc-600 */
-  --axis-tick: #52525b;
-  --grid-stroke: rgba(0, 0, 0, 0.08);
-  --ref-line: #9ca3af; /* zinc-400 */
-  --chip-border: rgba(0, 0, 0, 0.15);
+  --panel-border: #000000; /* 纯黑边框 */
+  --muted-text: #666666;
+  --axis-tick: #999999;
+  --grid-stroke: rgba(0, 0, 0, 0.1);
+  --ref-line: #cccccc;
+  --chip-border: #000000; /* 纯黑边框 */
   --btn-active-bg: rgba(0, 0, 0, 0.1);
-  --btn-active-fg: #18181b;
-  --btn-inactive-fg: #52525b;
+  --btn-active-fg: #000000;
+  --btn-inactive-fg: #666666;
   --btn-hover-bg: rgba(0, 0, 0, 0.05);
   --tooltip-bg: #ffffff;
-  --tooltip-border: rgba(0, 0, 0, 0.12);
-  --tooltip-fg: #18181b;
+  --tooltip-border: #000000; /* 纯黑边框 */
+  --tooltip-fg: #000000;
   /* apply only in light theme: fallback for too-light line colors */
   --line-too-light-fallback: #4b5563; /* neutral dark for visibility */
   --table-row-alt: rgba(0, 0, 0, 0.05);
   --link-hover: #000000;
   --brand-accent: #7c3aed; /* purple-600 */
-  --header-bg: rgba(255, 255, 255, 0.7);
-  --header-border: rgba(0, 0, 0, 0.1);
+  --header-bg: #f5f5f5;
+  --header-border: #000000; /* 纯黑边框 */
 }
 :root[data-theme="dark"] {
-  --background: #0a0a0a;
-  --foreground: #ededed;
+  --background: #1a1a1a;
+  --foreground: #ffffff;
   --chart-logo-bg: rgba(255, 255, 255, 0.9);
   --chart-logo-ring: rgba(255, 255, 255, 0.28);
   --logo-chip-bg: rgba(255, 255, 255, 0.06);
@@ -127,13 +172,18 @@
   --table-row-alt: rgba(255, 255, 255, 0.05);
   --link-hover: #ffffff;
   --brand-accent: #c084fc; /* purple-300 */
-  --header-bg: rgba(0, 0, 0, 0.7);
-  --header-border: rgba(255, 255, 255, 0.1);
+  --header-bg: rgba(0, 0, 0, 0.8);
+  --header-border: rgba(255, 255, 255, 0.2);
+  
+  --panel-bg: #1a1a1a;
+  --panel-border: rgba(255, 255, 255, 0.2);
+  --muted-text: #888888;
+  --chip-border: rgba(255, 255, 255, 0.3);
 }
 
 body {
-  background: var(--background);
-  color: var(--foreground);
+  background: #ffffff; /* 白色背景 */
+  color: #000000; /* 黑色文字 */
   font-family:
     IBM Plex Mono,
     monospace;
@@ -156,6 +206,14 @@ body {
   font-feature-settings:
     "tnum" 1,
     "lnum" 1;
+}
+
+/* 全局无圆角 - 完全方块风格匹配 nof1.ai */
+.rounded-md,
+.rounded,
+.rounded-sm,
+.rounded-full {
+  border-radius: 0 !important;
 }
 
 /* Terminal-like monospace typography for model chat */
@@ -201,14 +259,14 @@ body {
     3px 100%;
 }
 
-/* Reusable logo chip styles */
+/* Reusable logo chip styles - 完全方块风格 */
 .logo-chip {
   display: inline-flex;
   align-items: center;
   justify-content: center;
   background: var(--logo-chip-bg);
   border: 1px solid var(--logo-chip-ring);
-  border-radius: 6px;
+  border-radius: 0 !important; /* 完全无圆角 */
 }
 .logo-chip-sm {
   width: 16px;
@@ -266,14 +324,33 @@ body {
   background: var(--skeleton-bg);
 }
 
-/* Generic chip buttons that respect theme variables */
+/* Generic chip buttons that respect theme variables - 匹配nof1.ai terminal-button样式 */
 .chip-btn {
-  transition:
-    background-color 160ms ease,
-    color 160ms ease;
+  background: var(--surface);
+  border: 1px solid var(--chip-border);
+  color: var(--foreground);
+  font-family: "IBM Plex Mono", monospace;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  cursor: pointer;
+  transition: none; /* nof1.ai 不使用过渡 */
 }
 .chip-btn:hover {
-  background: var(--btn-hover-bg);
+  background: var(--surface-hover);
+}
+.chip-btn.active {
+  background: var(--btn-active-bg);
+  color: var(--btn-active-fg);
+}
+
+/* 边框宽度标准化 - 使用粗线条 */
+.border {
+  border-width: 2px !important;
+}
+
+.border-b {
+  border-bottom-width: 2px !important;
 }
 
 /* Endcap value chip pop-in on update */

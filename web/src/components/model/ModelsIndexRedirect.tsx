@@ -1,15 +1,17 @@
 "use client";
 import { useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import { useLatestEquityMap } from "@/lib/api/hooks/useModelSnapshots";
-import { useRouter } from "next/navigation";
 
 export default function ModelsIndexRedirect() {
   const { map, isLoading } = useLatestEquityMap();
-  const router = useRouter();
+  const navigate = useNavigate();
   useEffect(() => {
     if (isLoading) return;
     const ids = Object.keys(map || {});
-    if (ids.length > 0) router.replace(`/models/${encodeURIComponent(ids[0])}`);
-  }, [isLoading, map, router]);
+    if (ids.length > 0) {
+      navigate(`/models/${encodeURIComponent(ids[0])}`, { replace: true });
+    }
+  }, [isLoading, map, navigate]);
   return null;
 }
