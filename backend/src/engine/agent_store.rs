@@ -151,7 +151,7 @@ impl AgentStore {
         .await
         .context("Failed to fetch messages")?;
 
-        let messages = rows
+        let messages: Vec<AgentMessage> = rows
             .into_iter()
             .map(|row| AgentMessage {
                 id: row.get("id"),
@@ -226,7 +226,7 @@ impl AgentStore {
         .await
         .context("Failed to list sessions")?;
 
-        let summaries = rows
+        let summaries: Vec<SessionSummary> = rows
             .into_iter()
             .map(|row| SessionSummary {
                 session: AgentSession {
@@ -295,7 +295,7 @@ impl AgentStore {
         .await
         .context("Failed to search messages")?;
 
-        let messages = rows
+        let messages: Vec<AgentMessage> = rows
             .into_iter()
             .map(|row| AgentMessage {
                 id: row.get("id"),
