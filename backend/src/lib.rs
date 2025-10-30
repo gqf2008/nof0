@@ -6,3 +6,5 @@ pub mod error;
 pub mod llm;
 pub mod markets;
 pub mod mcp;
+pub mod mock_data;
+pub mod risk;

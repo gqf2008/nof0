@@ -69,20 +69,20 @@ impl ToolExecutor {
         });
 
         // 反序列化为 McpMessage
-        let mcp_message: crate::mcp::McpMessage =
-            match serde_json::from_value(mcp_request.clone()) {
-                Ok(msg) => msg,
-                Err(e) => {
-                    let error_msg = format!("Failed to parse MCP request: {}", e);
-                    warn!("{}", error_msg);
-                    return ExecutionResult {
-                        tool_call: tool_call.clone(),
-                        result: String::new(),
-                        success: false,
-                        error: Some(error_msg),
-                    };
-                }
-            };
+        let mcp_message: crate::mcp::McpMessage = match serde_json::from_value(mcp_request.clone())
+        {
+            Ok(msg) => msg,
+            Err(e) => {
+                let error_msg = format!("Failed to parse MCP request: {}", e);
+                warn!("{}", error_msg);
+                return ExecutionResult {
+                    tool_call: tool_call.clone(),
+                    result: String::new(),
+                    success: false,
+                    error: Some(error_msg),
+                };
+            }
+        };
 
         // 调用 MCP Server
         let response = self.mcp_server.handle_request(mcp_message).await;
@@ -142,10 +142,7 @@ impl ToolExecutor {
     }
 
     /// 执行多个工具调用
-    pub async fn execute_tool_calls(
-        &self,
-        tool_calls: &[ToolCall],
-    ) -> Vec<ExecutionResult> {
+    pub async fn execute_tool_calls(&self, tool_calls: &[ToolCall]) -> Vec<ExecutionResult> {
         let mut results = Vec::new();
 
         for tool_call in tool_calls {
@@ -157,10 +154,7 @@ impl ToolExecutor {
     }
 
     /// 将工具执行结果转换为聊天消息
-    pub fn execution_results_to_messages(
-        &self,
-        executions: &[ExecutionResult],
-    ) -> Vec<Message> {
+    pub fn execution_results_to_messages(&self, executions: &[ExecutionResult]) -> Vec<Message> {
         executions
             .iter()
             .map(|exec| {
@@ -212,7 +206,10 @@ impl ToolExecutor {
             round += 1;
 
             if round > self.max_rounds {
-                warn!("Reached maximum rounds ({}), stopping dialogue", self.max_rounds);
+                warn!(
+                    "Reached maximum rounds ({}), stopping dialogue",
+                    self.max_rounds
+                );
                 break;
             }
 
@@ -266,7 +263,10 @@ impl ToolExecutor {
                 // 继续下一轮
             } else {
                 // 没有工具调用，返回最终结果
-                info!("No tool calls in response, dialogue finished in {} rounds", round);
+                info!(
+                    "No tool calls in response, dialogue finished in {} rounds",
+                    round
+                );
                 return Ok(DialogueResult {
                     final_response: response.content,
                     total_rounds: round,

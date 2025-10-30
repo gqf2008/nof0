@@ -4,12 +4,14 @@
     windows_subsystem = "windows"
 )]
 
+mod brokers;
 mod config;
 mod engine;
 mod error;
 mod llm;
 mod markets;
 mod mcp;
+mod mock_data;
 mod server;
 mod tray;
 
@@ -26,8 +28,8 @@ fn main() -> anyhow::Result<()> {
     let addr: SocketAddr = std::env::var("PORT")
         .ok()
         .and_then(|p| p.parse().ok())
-        .map(|port| SocketAddr::from(([0, 0, 0, 0], port)))
-        .unwrap_or_else(|| SocketAddr::from(([0, 0, 0, 0], 8788)));
+        .map(|port| SocketAddr::from(([127, 0, 0, 1], port)))
+        .unwrap_or_else(|| SocketAddr::from(([127, 0, 0, 1], 8788)));
 
     let url = format!("http://localhost:{}", addr.port());
 

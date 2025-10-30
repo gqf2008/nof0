@@ -29,6 +29,7 @@ tokio-tungstenite = "0.28.0"
 # 序列化
 serde = { version = "1.0", features = ["derive"] }
 serde_json = "1.0"
+serde_yaml = "0.9.33"
 
 # 异步运行时
 tokio = { version = "1.40", features = ["full"] }
@@ -45,16 +46,29 @@ mime_guess = "2.0"
 # 工具
 chrono = { version = "0.4", features = ["serde"] }
 webbrowser = "1.0"
+rand = "0.8"
+url = "2.5"
+
+# CTP期货交易接口 (https://github.com/pseudocodes/ctp2rs)
+# 注意: ctp2rs需要CTP SDK的动态链接库
+# Windows: thostmduserapi_se.dll, thosttraderapi_se.dll
+# Linux: libthostmduserapi_se.so, libthosttraderapi_se.so
+ctp2rs = { version = "0.1.8", optional = true }
 
 # 数据库
-sqlx = { version = "0.7", features = ["runtime-tokio-rustls", "postgres", "chrono", "json"] }
+sqlx = { version = "0.8.6", features = [
+    "runtime-tokio-rustls",
+    "postgres",
+    "chrono",
+    "json",
+] }
 
 # 系统托盘
 tray-icon = "0.21.2"
 image = "0.25"
 
 [target.'cfg(windows)'.dependencies]
-windows = { version = "0.58", features = [
+windows = { version = "0.62.2", features = [
     "Win32_UI_WindowsAndMessaging",
     "Win32_Foundation",
 ] }
@@ -64,6 +78,11 @@ windows = { version = "0.58", features = [
 
 # 缓存 (可选, 暂未启用)
 # redis = { version = "0.24", features = ["tokio-comp", "connection-manager"] }
+
+[features]
+default = []
+# 启用真实CTP连接(需要CTP SDK动态库)
+ctp-real = ["ctp2rs"]
 
 [target.'cfg(windows)'.build-dependencies]
 winresource = "0.1"

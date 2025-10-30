@@ -20,6 +20,7 @@ use tower_http::{
 };
 use tracing::{error, info};
 
+use crate::config::BrokersConfig;
 use crate::engine::TradingEngine;
 use crate::mcp::{GetPriceTool, McpServer, PlaceOrderTool};
 
@@ -50,6 +51,18 @@ pub async fn run_http_server(addr: SocketAddr, url: String) -> anyhow::Result<()
 
     info!("Initialized MCP Server and Trading Engine");
 
+    // 加载经纪商配置
+    let brokers_config = match BrokersConfig::load_default() {
+        Ok(config) => {
+            info!("Loaded {} brokers from config", config.brokers.len());
+            Arc::new(config)
+        }
+        Err(e) => {
+            error!("Failed to load brokers config: {}, using default", e);
+            Arc::new(BrokersConfig::default())
+        }
+    };
+
     let upstream =
         std::env::var("NOF1_API_BASE_URL").unwrap_or_else(|_| "https://nof1.ai/api".to_string());
     let upstream = upstream.trim_end_matches('/').to_string();
@@ -71,13 +84,34 @@ pub async fn run_http_server(addr: SocketAddr, url: String) -> anyhow::Result<()
         .allow_headers(Any)
         .expose_headers([header::ETAG, header::LAST_MODIFIED]);
 
-    let app = Router::new()
+    // 创建 CTP 路由 (独立的 Router，有自己的 state)
+    #[cfg(feature = "ctp-real")]
+    let ctp_routes = {
+        info!("Initializing CTP Web API routes");
+        crate::brokers::ctp::create_ctp_routes()
+    };
+
+    let mut app = Router::new()
         .route("/api/nof1/{*path}", get(proxy))
+        .route(
+            "/api/config/brokers",
+            get(|| async move {
+                // 每次请求时实时读取配置文件,支持动态更新
+                let config = BrokersConfig::load_default().unwrap_or_default();
+                Json(config)
+            }),
+        )
         .route("/health", get(health))
         .fallback(static_handler)
         .with_state(state)
         .layer(cors)
         .layer(TraceLayer::new_for_http());
+
+    // 挂载 CTP 路由
+    #[cfg(feature = "ctp-real")]
+    {
+        app = app.merge(ctp_routes);
+    }
 
     info!("starting server at {}", addr);
 
@@ -95,6 +129,41 @@ async fn proxy(
     OriginalUri(uri): OriginalUri,
     headers: HeaderMap,
 ) -> Result<Response, StatusCode> {
+    // 从 query string 中提取 exchange_id
+    let query_params: std::collections::HashMap<String, String> = uri
+        .query()
+        .map(|v| {
+            url::form_urlencoded::parse(v.as_bytes())
+                .into_owned()
+                .collect()
+        })
+        .unwrap_or_default();
+
+    let exchange_id = query_params.get("exchange_id");
+
+    // 如果有 exchange_id,返回模拟数据
+    if let Some(exchange_id) = exchange_id {
+        use crate::mock_data::generate_mock_data;
+
+        if let Some(mock_data) = generate_mock_data(&path, exchange_id) {
+            let json_body =
+                serde_json::to_string(&mock_data).map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
+
+            let first_segment = path.split('/').find(|s| !s.is_empty()).unwrap_or("");
+            let cache_header = cache_control(first_segment);
+
+            return Response::builder()
+                .status(StatusCode::OK)
+                .header(header::CONTENT_TYPE, "application/json; charset=utf-8")
+                .header(header::CACHE_CONTROL, cache_header.clone())
+                .header("cdn-cache-control", cache_header)
+                .header(header::ACCESS_CONTROL_ALLOW_ORIGIN, "*")
+                .body(Body::from(json_body))
+                .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR);
+        }
+    }
+
+    // 否则走原来的代理逻辑
     let target = build_target(&state.upstream, &path, &uri);
 
     let mut req = state.client.get(target);

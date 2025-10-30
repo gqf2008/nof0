@@ -2,8 +2,10 @@
 import useSWR from "swr";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { activityAwareRefresh } from "./activityAware";
-import { endpoints, fetcher } from "../nof1";
+import { fetcher } from "../nof1";
+import { getExchangeEndpoints } from "../exchange-endpoints";
 import { useChartStore } from "@/store/useChartStore";
+import { useExchange } from "@/contexts/ExchangeContext";
 
 export interface SeriesPoint {
   timestamp: number; // ms epoch
@@ -43,6 +45,10 @@ interface AccountTotalsResponse {
 }
 
 export function useAccountValueSeries() {
+  // 获取当前交易所 ID
+  const { exchangeId } = useExchange();
+  const endpoints = useMemo(() => getExchangeEndpoints(exchangeId), [exchangeId]);
+  
   // 1) Full history once
   const {
     data: base,

@@ -1,0 +1,57 @@
+# 风险控制配置
+
+# 是否启用风控
+enabled: true
+
+# 仓位限制
+position_limits:
+  # 单个品种最大仓位(USD)
+  max_position_per_symbol: 10000.0
+
+  # 总仓位限制(USD)
+  max_total_position: 50000.0
+
+  # 最大杠杆倍数
+  max_leverage: 3.0
+
+  # 单个品种最大持仓比例(相对于总资产)
+  max_position_ratio: 0.3 # 30%
+
+# 损失限制
+loss_limits:
+  # 每日最大亏损(USD)
+  max_daily_loss: 1000.0
+
+  # 最大回撤比例
+  max_drawdown: 0.2 # 20%
+
+  # 单笔交易最大亏损(USD)
+  max_loss_per_trade: 500.0
+
+  # 止损比例(相对于入场价)
+  stop_loss_ratio: 0.05 # 5%
+
+# 交易频率限制
+frequency_limits:
+  # 每分钟最大订单数
+  max_orders_per_minute: 10
+
+  # 每小时最大订单数
+  max_orders_per_hour: 100
+
+  # 每天最大订单数
+  max_orders_per_day: 500
+
+  # 最小订单间隔(秒)
+  min_order_interval_secs: 1
+
+# 订单大小限制
+order_size_limits:
+  # 最小订单金额(USD)
+  min_order_value: 10.0
+
+  # 最大订单金额(USD)
+  max_order_value: 10000.0
+
+  # 单笔订单最大占用资金比例
+  max_order_ratio: 0.5 # 50%

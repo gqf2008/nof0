@@ -44,7 +44,7 @@ export function Header() {
           aria-label="Primary"
           style={{ fontSize: "16px" }}
         >
-          <NavItem to="/" label="实盘" currentPath={location.pathname} />
+          <NavItem to="/" label="交易所" currentPath={location.pathname} />
           <span style={{ color: "#d0d0d0", margin: "0 8px" }}>|</span>
           <NavItem
             to="/leaderboard"

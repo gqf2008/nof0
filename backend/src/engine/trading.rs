@@ -42,30 +42,20 @@ impl TradingEngine {
     }
 
     pub async fn list_llm_providers(&self) -> Vec<String> {
-        self.llm_providers
-            .read()
-            .await
-            .keys()
-            .cloned()
-            .collect()
+        self.llm_providers.read().await.keys().cloned().collect()
     }
 
     pub async fn list_markets(&self) -> Vec<String> {
-        self.markets
-            .read()
-            .await
-            .keys()
-            .cloned()
-            .collect()
+        self.markets.read().await.keys().cloned().collect()
     }
 
     pub async fn run(&self) -> Result<(), anyhow::Error> {
         info!("Trading engine started");
-        
+
         // 列出已注册的 Providers
         let providers = self.list_llm_providers().await;
         info!("Registered LLM providers: {:?}", providers);
-        
+
         let markets = self.list_markets().await;
         info!("Registered markets: {:?}", markets);
 

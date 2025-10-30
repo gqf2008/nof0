@@ -276,7 +276,10 @@ impl AgentStore {
         query: &str,
         limit: i64,
     ) -> Result<Vec<AgentMessage>> {
-        debug!("Searching messages for model {} with query: {}", model_id, query);
+        debug!(
+            "Searching messages for model {} with query: {}",
+            model_id, query
+        );
 
         let rows = sqlx::query(
             r#"

@@ -1,0 +1,111 @@
+# 交易所配置文件
+# 程序启动时读取此配置，生成导航页面
+
+exchanges:
+  # 数字货币交易所配置
+  - id: "crypto"
+    name: "数字货币交易所"
+    name_en: "Crypto Exchange"
+    description: "实时监控数字货币交易账户 - 支持多币种交易"
+    icon: "₿"
+    color: "#f7931a"
+    enabled: true
+    status: "运行中"
+    route: "/crypto"
+    api_endpoint: "http://localhost:8788/api/nof1"
+    data_source: "local" # local 使用本地JSON文件, proxy 使用远程API
+    data_path: "../mcp/data" # 本地数据目录
+    features:
+      - "实时行情"
+      - "持仓管理"
+      - "成交记录"
+      - "AI对话"
+
+  # CTP期货交易所配置
+  - id: "ctp"
+    name: "CTP 期货交易所"
+    name_en: "CTP Futures"
+    description: "中国期货市场交易终端 - 实时行情、账户监控、持仓管理"
+    icon: "📊"
+    color: "#00a0e9"
+    enabled: true
+    status: "运行中"
+    route: "/ctp"
+    api_endpoint: "http://localhost:8788/api/ctp"
+    features:
+      - "期货行情"
+      - "持仓监控"
+      - "交易执行"
+      - "风险控制"
+    config:
+      broker_id: "9999"
+      md_address: "tcp://180.168.146.187:10131"
+      td_address: "tcp://180.168.146.187:10130"
+
+  # 币安交易所（示例，未启用）
+  - id: "binance"
+    name: "币安交易所"
+    name_en: "Binance"
+    description: "全球领先的数字货币交易平台"
+    icon: "🔶"
+    color: "#f3ba2f"
+    enabled: true
+    status: "开发中"
+    route: "/binance"
+    api_endpoint: "https://api.binance.com"
+    features:
+      - "现货交易"
+      - "合约交易"
+      - "理财产品"
+
+  # Bybit交易所（新增）
+  - id: "bybit"
+    name: "Bybit 交易所"
+    name_en: "Bybit"
+    description: "专业的加密货币衍生品交易平台"
+    icon: "🐦"
+    color: "#f7a600"
+    enabled: true
+    status: "开发中"
+    route: "/bybit"
+    api_endpoint: "https://api.bybit.com"
+    features:
+      - "永续合约"
+      - "期货交易"
+      - "现货交易"
+      - "期权交易"
+
+  # Kraken交易所
+  - id: "kraken"
+    name: "Kraken 交易所"
+    name_en: "Kraken"
+    description: "老牌美国加密货币交易所"
+    icon: "🐙"
+    color: "#5741d9"
+    enabled: true
+    status: "计划中"
+    route: "/kraken"
+    api_endpoint: "https://api.kraken.com"
+    features:
+      - "现货交易"
+      - "期货合约"
+      - "质押服务"
+      - "法币出入金"
+
+# 全局配置
+settings:
+  # 页面刷新间隔（秒）
+  refresh_interval: 5
+
+  # 是否自动连接所有启用的交易所
+  auto_connect: false
+
+  # WebSocket 重连配置
+  websocket:
+    reconnect_interval: 3
+    max_reconnect_attempts: 5
+
+  # 主题配置
+  theme:
+    default: "dark"
+    available: ["dark", "light"]
