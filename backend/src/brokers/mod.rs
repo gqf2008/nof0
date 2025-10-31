@@ -9,7 +9,7 @@ pub use binance::BinanceBroker;
 #[allow(unused_imports)]
 pub use ctp::CtpBroker;
 #[allow(unused_imports)]
-pub use mock_broker::{BrokerType, MockBroker};
+pub use mock_broker::MockBroker;
 #[allow(unused_imports)]
 pub use okex::OkexBroker;
 pub use types::*;

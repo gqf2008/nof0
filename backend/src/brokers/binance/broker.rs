@@ -381,8 +381,8 @@ impl AccountManagement for BinanceBroker {
                         } else {
                             0.0
                         },
-                        since_inception_minute_marker: i,
-                        since_inception_hourly_marker: i / 60,
+                        since_inception_minute_marker: i as i32,
+                        since_inception_hourly_marker: (i / 60) as i32,
                     });
                 }
             }
