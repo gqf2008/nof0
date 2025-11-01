@@ -1,11 +1,17 @@
+pub mod binance;
 pub mod ctp;
 pub mod mock_broker;
+pub mod okex;
 pub mod types;
 
 #[allow(unused_imports)]
+pub use binance::BinanceBroker;
+#[allow(unused_imports)]
 pub use ctp::CtpBroker;
 #[allow(unused_imports)]
-pub use mock_broker::{BrokerType, MockBroker};
+pub use mock_broker::MockBroker;
+#[allow(unused_imports)]
+pub use okex::OkexBroker;
 pub use types::*;
 
 use std::future::Future;
@@ -147,6 +153,8 @@ pub trait Broker: MarketData + Trading + AccountManagement + Analytics + Send + 
 pub enum BrokerInstance {
     Mock(MockBroker),
     Ctp(CtpBroker),
+    Binance(BinanceBroker),
+    Okex(OkexBroker),
 }
 
 impl Broker for BrokerInstance {
@@ -154,6 +162,8 @@ impl Broker for BrokerInstance {
         match self {
             BrokerInstance::Mock(b) => b.broker_id(),
             BrokerInstance::Ctp(b) => b.broker_id(),
+            BrokerInstance::Binance(b) => b.broker_id(),
+            BrokerInstance::Okex(b) => b.broker_id(),
         }
     }
 
@@ -161,6 +171,8 @@ impl Broker for BrokerInstance {
         match self {
             BrokerInstance::Mock(b) => b.broker_name(),
             BrokerInstance::Ctp(b) => b.broker_name(),
+            BrokerInstance::Binance(b) => b.broker_name(),
+            BrokerInstance::Okex(b) => b.broker_name(),
         }
     }
 }
@@ -173,6 +185,8 @@ impl MarketData for BrokerInstance {
             match self {
                 BrokerInstance::Mock(b) => b.get_prices().await,
                 BrokerInstance::Ctp(b) => b.get_prices().await,
+                BrokerInstance::Binance(b) => b.get_prices().await,
+                BrokerInstance::Okex(b) => b.get_prices().await,
             }
         }
     }
@@ -186,6 +200,8 @@ impl MarketData for BrokerInstance {
             match self {
                 BrokerInstance::Mock(b) => b.get_orderbook(&symbol).await,
                 BrokerInstance::Ctp(b) => b.get_orderbook(&symbol).await,
+                BrokerInstance::Binance(b) => b.get_orderbook(&symbol).await,
+                BrokerInstance::Okex(b) => b.get_orderbook(&symbol).await,
             }
         }
     }
@@ -202,6 +218,8 @@ impl MarketData for BrokerInstance {
             match self {
                 BrokerInstance::Mock(b) => b.get_klines(&symbol, &interval, limit).await,
                 BrokerInstance::Ctp(b) => b.get_klines(&symbol, &interval, limit).await,
+                BrokerInstance::Binance(b) => b.get_klines(&symbol, &interval, limit).await,
+                BrokerInstance::Okex(b) => b.get_klines(&symbol, &interval, limit).await,
             }
         }
     }
@@ -215,6 +233,8 @@ impl MarketData for BrokerInstance {
             match self {
                 BrokerInstance::Mock(b) => b.get_ticker_24h(&symbol).await,
                 BrokerInstance::Ctp(b) => b.get_ticker_24h(&symbol).await,
+                BrokerInstance::Binance(b) => b.get_ticker_24h(&symbol).await,
+                BrokerInstance::Okex(b) => b.get_ticker_24h(&symbol).await,
             }
         }
     }
@@ -229,6 +249,8 @@ impl Trading for BrokerInstance {
             match self {
                 BrokerInstance::Mock(b) => b.place_order(order).await,
                 BrokerInstance::Ctp(b) => b.place_order(order).await,
+                BrokerInstance::Binance(b) => b.place_order(order).await,
+                BrokerInstance::Okex(b) => b.place_order(order).await,
             }
         }
     }
@@ -242,6 +264,8 @@ impl Trading for BrokerInstance {
             match self {
                 BrokerInstance::Mock(b) => b.cancel_order(&order_id).await,
                 BrokerInstance::Ctp(b) => b.cancel_order(&order_id).await,
+                BrokerInstance::Binance(b) => b.cancel_order(&order_id).await,
+                BrokerInstance::Okex(b) => b.cancel_order(&order_id).await,
             }
         }
     }
@@ -255,6 +279,8 @@ impl Trading for BrokerInstance {
             match self {
                 BrokerInstance::Mock(b) => b.get_order(&order_id).await,
                 BrokerInstance::Ctp(b) => b.get_order(&order_id).await,
+                BrokerInstance::Binance(b) => b.get_order(&order_id).await,
+                BrokerInstance::Okex(b) => b.get_order(&order_id).await,
             }
         }
     }
@@ -268,6 +294,8 @@ impl Trading for BrokerInstance {
             match self {
                 BrokerInstance::Mock(b) => b.get_orders(symbol.as_deref()).await,
                 BrokerInstance::Ctp(b) => b.get_orders(symbol.as_deref()).await,
+                BrokerInstance::Binance(b) => b.get_orders(symbol.as_deref()).await,
+                BrokerInstance::Okex(b) => b.get_orders(symbol.as_deref()).await,
             }
         }
     }
@@ -279,6 +307,8 @@ impl Trading for BrokerInstance {
             match self {
                 BrokerInstance::Mock(b) => b.get_trades().await,
                 BrokerInstance::Ctp(b) => b.get_trades().await,
+                BrokerInstance::Binance(b) => b.get_trades().await,
+                BrokerInstance::Okex(b) => b.get_trades().await,
             }
         }
     }
@@ -293,6 +323,8 @@ impl AccountManagement for BrokerInstance {
             match self {
                 BrokerInstance::Mock(b) => b.get_account_totals(last_marker).await,
                 BrokerInstance::Ctp(b) => b.get_account_totals(last_marker).await,
+                BrokerInstance::Binance(b) => b.get_account_totals(last_marker).await,
+                BrokerInstance::Okex(b) => b.get_account_totals(last_marker).await,
             }
         }
     }
@@ -304,6 +336,8 @@ impl AccountManagement for BrokerInstance {
             match self {
                 BrokerInstance::Mock(b) => b.get_model_accounts().await,
                 BrokerInstance::Ctp(b) => b.get_model_accounts().await,
+                BrokerInstance::Binance(b) => b.get_model_accounts().await,
+                BrokerInstance::Okex(b) => b.get_model_accounts().await,
             }
         }
     }
@@ -316,6 +350,8 @@ impl AccountManagement for BrokerInstance {
             match self {
                 BrokerInstance::Mock(b) => b.get_positions(limit).await,
                 BrokerInstance::Ctp(b) => b.get_positions(limit).await,
+                BrokerInstance::Binance(b) => b.get_positions(limit).await,
+                BrokerInstance::Okex(b) => b.get_positions(limit).await,
             }
         }
     }
@@ -327,6 +363,8 @@ impl AccountManagement for BrokerInstance {
             match self {
                 BrokerInstance::Mock(b) => b.get_balance().await,
                 BrokerInstance::Ctp(b) => b.get_balance().await,
+                BrokerInstance::Binance(b) => b.get_balance().await,
+                BrokerInstance::Okex(b) => b.get_balance().await,
             }
         }
     }
@@ -338,6 +376,8 @@ impl AccountManagement for BrokerInstance {
             match self {
                 BrokerInstance::Mock(b) => b.get_broker_account().await,
                 BrokerInstance::Ctp(b) => b.get_broker_account().await,
+                BrokerInstance::Binance(b) => b.get_broker_account().await,
+                BrokerInstance::Okex(b) => b.get_broker_account().await,
             }
         }
     }
@@ -351,6 +391,8 @@ impl Analytics for BrokerInstance {
             match self {
                 BrokerInstance::Mock(b) => b.get_analytics().await,
                 BrokerInstance::Ctp(b) => b.get_analytics().await,
+                BrokerInstance::Binance(b) => b.get_analytics().await,
+                BrokerInstance::Okex(b) => b.get_analytics().await,
             }
         }
     }
@@ -362,6 +404,8 @@ impl Analytics for BrokerInstance {
             match self {
                 BrokerInstance::Mock(b) => b.get_leaderboard().await,
                 BrokerInstance::Ctp(b) => b.get_leaderboard().await,
+                BrokerInstance::Binance(b) => b.get_leaderboard().await,
+                BrokerInstance::Okex(b) => b.get_leaderboard().await,
             }
         }
     }
@@ -373,6 +417,8 @@ impl Analytics for BrokerInstance {
             match self {
                 BrokerInstance::Mock(b) => b.get_since_inception_values().await,
                 BrokerInstance::Ctp(b) => b.get_since_inception_values().await,
+                BrokerInstance::Binance(b) => b.get_since_inception_values().await,
+                BrokerInstance::Okex(b) => b.get_since_inception_values().await,
             }
         }
     }
@@ -384,6 +430,8 @@ impl Analytics for BrokerInstance {
             match self {
                 BrokerInstance::Mock(b) => b.get_conversations().await,
                 BrokerInstance::Ctp(b) => b.get_conversations().await,
+                BrokerInstance::Binance(b) => b.get_conversations().await,
+                BrokerInstance::Okex(b) => b.get_conversations().await,
             }
         }
     }
@@ -395,6 +443,8 @@ impl Analytics for BrokerInstance {
             match self {
                 BrokerInstance::Mock(b) => b.get_models_list().await,
                 BrokerInstance::Ctp(b) => b.get_models_list().await,
+                BrokerInstance::Binance(b) => b.get_models_list().await,
+                BrokerInstance::Okex(b) => b.get_models_list().await,
             }
         }
     }

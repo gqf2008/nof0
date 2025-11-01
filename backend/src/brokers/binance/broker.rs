@@ -2,124 +2,82 @@ use crate::brokers::*;
 use rand::Rng;
 use std::collections::HashMap;
 
-use super::adapter::CtpMarketAdapter;
 use super::types::*;
 
-/// CTP 经纪商实现 (改进版 - 使用强类型)
-/// 基于 CTP (Comprehensive Transaction Platform) 柜台协议
-/// 支持中国期货市场的交易和行情接口
+/// Binance (币安) 经纪商实现
+/// 全球领先的加密货币交易所
 #[allow(dead_code)]
-pub struct CtpBroker {
+pub struct BinanceBroker {
     id: String,
     name: String,
-    config: CtpConfig,
-    adapter: CtpMarketAdapter,
+    config: BinanceConfig,
 }
 
 #[allow(dead_code)]
-impl CtpBroker {
-    pub fn new(id: String, name: String, config: CtpConfig) -> Self {
-        let adapter = CtpMarketAdapter::new(config.clone());
-        Self {
-            id,
-            name,
-            config,
-            adapter,
-        }
+impl BinanceBroker {
+    pub fn new(id: String, name: String, config: BinanceConfig) -> Self {
+        Self { id, name, config }
     }
 
-    /// 获取 CTP 支持的期货合约列表 (更新到2025年合约)
-    fn get_instruments(&self) -> Vec<String> {
+    /// 获取币安支持的加密货币列表
+    fn get_symbols(&self) -> Vec<String> {
         vec![
-            "IF2501".to_string(), // 沪深300股指期货 (更新月份)
-            "IC2501".to_string(), // 中证500股指期货
-            "IH2501".to_string(), // 上证50股指期货
-            "IM2501".to_string(), // 中证1000股指期货
-            "rb2505".to_string(), // 螺纹钢 (更新月份)
-            "hc2505".to_string(), // 热轧卷板
-            "i2505".to_string(),  // 铁矿石
-            "au2504".to_string(), // 黄金
-            "ag2504".to_string(), // 白银
-            "cu2505".to_string(), // 铜
+            "BTCUSDT".to_string(),
+            "ETHUSDT".to_string(),
+            "BNBUSDT".to_string(),
+            "SOLUSDT".to_string(),
+            "ADAUSDT".to_string(),
+            "XRPUSDT".to_string(),
+            "DOGEUSDT".to_string(),
+            "DOTUSDT".to_string(),
+            "MATICUSDT".to_string(),
+            "LINKUSDT".to_string(),
         ]
     }
 
-    /// 获取合约的基准价格 (更新为2025年的合理价格)
-    fn get_base_price(&self, instrument: &str) -> f64 {
-        match instrument {
-            s if s.starts_with("IF") => 4500.0,  // 沪深300 (调整价格)
-            s if s.starts_with("IC") => 6800.0,  // 中证500
-            s if s.starts_with("IH") => 3000.0,  // 上证50
-            s if s.starts_with("IM") => 5500.0,  // 中证1000
-            s if s.starts_with("rb") => 4000.0,  // 螺纹钢
-            s if s.starts_with("hc") => 3800.0,  // 热轧卷板
-            s if s.starts_with("i") => 900.0,    // 铁矿石
-            s if s.starts_with("au") => 500.0,   // 黄金
-            s if s.starts_with("ag") => 6000.0,  // 白银
-            s if s.starts_with("cu") => 70000.0, // 铜
+    /// 获取交易对的基准价格
+    fn get_base_price(&self, symbol: &str) -> f64 {
+        match symbol {
+            "BTCUSDT" => 106000.0,
+            "ETHUSDT" => 3800.0,
+            "BNBUSDT" => 620.0,
+            "SOLUSDT" => 230.0,
+            "ADAUSDT" => 1.05,
+            "XRPUSDT" => 2.45,
+            "DOGEUSDT" => 0.38,
+            "DOTUSDT" => 8.5,
+            "MATICUSDT" => 0.95,
+            "LINKUSDT" => 24.0,
             _ => 100.0,
         }
     }
 
-    /// 获取合约乘数 (用于计算保证金和盈亏)
-    fn get_contract_multiplier(&self, instrument: &str) -> f64 {
-        match instrument {
-            s if s.starts_with("IF") => 300.0,   // 沪深300
-            s if s.starts_with("IC") => 200.0,   // 中证500
-            s if s.starts_with("IH") => 300.0,   // 上证50
-            s if s.starts_with("IM") => 200.0,   // 中证1000
-            s if s.starts_with("rb") => 10.0,    // 螺纹钢
-            s if s.starts_with("hc") => 10.0,    // 热轧卷板
-            s if s.starts_with("i") => 100.0,    // 铁矿石
-            s if s.starts_with("au") => 1000.0,  // 黄金
-            s if s.starts_with("ag") => 15.0,    // 白银
-            s if s.starts_with("cu") => 5.0,     // 铜
-            _ => 1.0,
-        }
-    }
-
-    /// 获取保证金率
-    fn get_margin_rate(&self, instrument: &str) -> f64 {
-        match instrument {
-            s if s.starts_with("IF") | s.starts_with("IC") | s.starts_with("IH") | s.starts_with("IM") => 0.12, // 股指期货 12%
-            _ => 0.10, // 商品期货 10%
-        }
-    }
-
-    /// 获取模型配置（CTP 特定）- 增加第4个模型
+    /// 获取币安的AI模型配置
     fn get_models(&self) -> Vec<ModelInfo> {
         vec![
             ModelInfo {
-                model_id: "ctp_trend_following".to_string(),
-                model_name: "趋势追踪AI".to_string(),
-                strategy: "Trend Following".to_string(),
-                description: "基于移动平均线的趋势跟踪策略，适合中长期持仓".to_string(),
-                risk_level: "MEDIUM".to_string(),
-                base_capital: 1000000.0,
-            },
-            ModelInfo {
-                model_id: "ctp_statistical_arbitrage".to_string(),
-                model_name: "跨品种套利AI".to_string(),
-                strategy: "Statistical Arbitrage".to_string(),
-                description: "利用相关品种间的价差进行统计套利，风险较低".to_string(),
-                risk_level: "LOW".to_string(),
-                base_capital: 2000000.0,
-            },
-            ModelInfo {
-                model_id: "ctp_momentum_breakout".to_string(),
+                model_id: "binance_momentum".to_string(),
                 model_name: "动量突破AI".to_string(),
                 strategy: "Momentum Breakout".to_string(),
-                description: "捕捉短期动量突破机会，适合高频交易".to_string(),
+                description: "捕捉加密货币强势突破机会".to_string(),
                 risk_level: "HIGH".to_string(),
-                base_capital: 800000.0,
+                base_capital: 50000.0,
             },
             ModelInfo {
-                model_id: "ctp_hedging_strategy".to_string(),
-                model_name: "对冲套保AI".to_string(),
-                strategy: "Hedging Strategy".to_string(),
-                description: "利用期货进行风险对冲，保护现货资产".to_string(),
+                model_id: "binance_grid".to_string(),
+                model_name: "网格交易AI".to_string(),
+                strategy: "Grid Trading".to_string(),
+                description: "在波动市场中进行高频网格交易".to_string(),
+                risk_level: "MEDIUM".to_string(),
+                base_capital: 80000.0,
+            },
+            ModelInfo {
+                model_id: "binance_arbitrage".to_string(),
+                model_name: "套利AI".to_string(),
+                strategy: "Cross-Exchange Arbitrage".to_string(),
+                description: "跨交易所和跨币对套利".to_string(),
                 risk_level: "LOW".to_string(),
-                base_capital: 1500000.0,
+                base_capital: 100000.0,
             },
         ]
     }
@@ -139,7 +97,7 @@ struct ModelInfo {
 // ============================================================================
 // Broker Trait Implementation
 // ============================================================================
-impl Broker for CtpBroker {
+impl Broker for BinanceBroker {
     fn broker_id(&self) -> &str {
         &self.id
     }
@@ -150,21 +108,21 @@ impl Broker for CtpBroker {
 }
 
 // ============================================================================
-// MarketData Trait Implementation (行情接口实现 - 改用强类型)
+// MarketData Trait Implementation (行情接口实现)
 // ============================================================================
-impl MarketData for CtpBroker {
+impl MarketData for BinanceBroker {
     fn get_prices(
         &self,
     ) -> impl std::future::Future<Output = Result<Prices, Box<dyn std::error::Error>>> + Send {
         async move {
-            let instruments = self.get_instruments();
+            let symbols = self.get_symbols();
             let mut prices = HashMap::new();
             let mut rng = rand::thread_rng();
 
-            for instrument in instruments {
-                let base_price = self.get_base_price(&instrument);
-                let price = base_price * (1.0 + rng.gen_range(-0.015..0.015)); // 1.5%波动
-                prices.insert(instrument, price);
+            for symbol in symbols {
+                let base_price = self.get_base_price(&symbol);
+                let price = base_price * (1.0 + rng.gen_range(-0.02..0.02));
+                prices.insert(symbol, price);
             }
 
             Ok(Prices { prices })
@@ -184,17 +142,17 @@ impl MarketData for CtpBroker {
             let mut bids = vec![];
             let mut asks = vec![];
 
-            // 生成5档买单 (期货市场深度相对较浅)
-            for i in 0..5 {
+            // 生成20档买单（币安深度较深）
+            for i in 0..20 {
                 let price = base_price * (1.0 - 0.0001 * (i + 1) as f64);
-                let quantity = rng.gen_range(10.0..100.0);
+                let quantity = rng.gen_range(0.1..50.0);
                 bids.push(OrderbookLevel { price, quantity });
             }
 
-            // 生成5档卖单
-            for i in 0..5 {
+            // 生成20档卖单
+            for i in 0..20 {
                 let price = base_price * (1.0 + 0.0001 * (i + 1) as f64);
-                let quantity = rng.gen_range(10.0..100.0);
+                let quantity = rng.gen_range(0.1..50.0);
                 asks.push(OrderbookLevel { price, quantity });
             }
 
@@ -218,7 +176,7 @@ impl MarketData for CtpBroker {
         async move {
             let mut rng = rand::thread_rng();
             let base_price = self.get_base_price(&symbol);
-            let limit = limit.unwrap_or(100);
+            let limit = limit.unwrap_or(500);
             let mut klines = vec![];
 
             let mut current_price = base_price;
@@ -230,19 +188,19 @@ impl MarketData for CtpBroker {
                 "5m" => 300,
                 "15m" => 900,
                 "1h" => 3600,
+                "4h" => 14400,
                 "1d" => 86400,
                 _ => 60,
             };
 
             for i in (0..limit).rev() {
                 let timestamp = now - (i as i64 * interval_seconds);
-                let change = rng.gen_range(-0.012..0.012); // 期货波动较大
+                let change = rng.gen_range(-0.02..0.02);
                 current_price *= 1.0 + change;
 
-                let high = current_price * rng.gen_range(1.0..1.006);
-                let low = current_price * rng.gen_range(0.994..1.0);
-                let volume = rng.gen_range(500.0..5000.0);
-                let open_interest = Some(rng.gen_range(10000..50000) as i64); // 期货特有的持仓量
+                let high = current_price * rng.gen_range(1.0..1.01);
+                let low = current_price * rng.gen_range(0.99..1.0);
+                let volume = rng.gen_range(1000.0..100000.0);
 
                 klines.push(Kline {
                     timestamp,
@@ -251,7 +209,7 @@ impl MarketData for CtpBroker {
                     low,
                     close: current_price,
                     volume,
-                    open_interest,
+                    open_interest: None,
                 });
             }
 
@@ -272,18 +230,17 @@ impl MarketData for CtpBroker {
         async move {
             let mut rng = rand::thread_rng();
             let price = self.get_base_price(&symbol);
-            let change_pct = rng.gen_range(-4.0..4.0); // 期货日内波动
-            let volume = rng.gen_range(50000.0..500000.0);
-            let open_interest = Some(rng.gen_range(100000..1000000) as i64); // 期货持仓量
+            let change_pct = rng.gen_range(-8.0..8.0);
+            let volume = rng.gen_range(10000000.0..100000000.0);
 
             Ok(Ticker24h {
                 symbol,
                 last_price: price,
                 change_24h: change_pct,
-                high_24h: price * 1.025,
-                low_24h: price * 0.975,
+                high_24h: price * 1.04,
+                low_24h: price * 0.96,
                 volume_24h: volume,
-                open_interest,
+                open_interest: None,
                 timestamp: chrono::Utc::now().timestamp(),
             })
         }
@@ -291,16 +248,16 @@ impl MarketData for CtpBroker {
 }
 
 // ============================================================================
-// Trading Trait Implementation (交易接口实现 - 改用强类型)
+// Trading Trait Implementation (交易接口实现)
 // ============================================================================
-impl Trading for CtpBroker {
+impl Trading for BinanceBroker {
     fn place_order(
         &self,
         _order: OrderRequest,
     ) -> impl std::future::Future<Output = Result<OrderResponse, Box<dyn std::error::Error>>> + Send
     {
         async move {
-            let order_id = format!("CTP_{}", chrono::Utc::now().timestamp_millis());
+            let order_id = format!("BINANCE_{}", chrono::Utc::now().timestamp_millis());
             Ok(OrderResponse {
                 order_id,
                 status: OrderStatus::Accepted,
@@ -332,13 +289,13 @@ impl Trading for CtpBroker {
         async move {
             Ok(Order {
                 order_id,
-                symbol: "IF2501".to_string(),
+                symbol: "BTCUSDT".to_string(),
                 side: OrderSide::Buy,
                 order_type: OrderType::Limit,
-                quantity: 1.0,
-                filled_quantity: 1.0,
-                price: Some(4500.0),
-                avg_price: Some(4500.0),
+                quantity: 0.01,
+                filled_quantity: 0.01,
+                price: Some(106000.0),
+                avg_price: Some(106000.0),
                 status: OrderStatus::Filled,
                 created_at: chrono::Utc::now().timestamp(),
                 updated_at: chrono::Utc::now().timestamp(),
@@ -361,9 +318,9 @@ impl Trading for CtpBroker {
 }
 
 // ============================================================================
-// AccountManagement Trait Implementation (账户管理接口实现 - 改用强类型)
+// AccountManagement Trait Implementation (账户管理接口实现)
 // ============================================================================
-impl AccountManagement for CtpBroker {
+impl AccountManagement for BinanceBroker {
     fn get_account_totals(
         &self,
         _last_marker: Option<i32>,
@@ -379,12 +336,11 @@ impl AccountManagement for CtpBroker {
             for model in &models {
                 let base_value = model.base_capital;
 
-                // 期货市场波动率较高
                 let (volatility, trend_bias) = match model.risk_level.as_str() {
-                    "LOW" => (0.0012, 0.0002),
-                    "MEDIUM" => (0.0025, 0.0),
-                    "HIGH" => (0.004, -0.0002),
-                    _ => (0.0025, 0.0),
+                    "LOW" => (0.001, 0.0002),
+                    "MEDIUM" => (0.002, 0.0001),
+                    "HIGH" => (0.004, -0.0001),
+                    _ => (0.002, 0.0001),
                 };
 
                 let mut current_value = base_value;
@@ -398,7 +354,7 @@ impl AccountManagement for CtpBroker {
                     current_value *= 1.0 + change_pct;
 
                     let cumulative_return = (current_value - base_value) / base_value;
-                    let unrealized_pnl = current_value * rng.gen_range(-0.005..0.005);
+                    let unrealized_pnl = current_value * rng.gen_range(-0.01..0.01);
                     let dollar_equity = current_value + unrealized_pnl;
 
                     account_totals.push(AccountTotal {
@@ -418,9 +374,9 @@ impl AccountManagement for CtpBroker {
                         cum_pnl_pct: cumulative_return * 100.0,
                         sharpe_ratio: if i > 30 {
                             if cumulative_return > 0.0 {
-                                rng.gen_range(0.6..2.0) // 期货Sharpe较低
+                                rng.gen_range(0.8..2.5)
                             } else {
-                                rng.gen_range(-0.8..0.6)
+                                rng.gen_range(-0.5..0.8)
                             }
                         } else {
                             0.0
@@ -448,25 +404,23 @@ impl AccountManagement for CtpBroker {
             for model in models {
                 let base_value = model.base_capital;
 
-                // 期货盈亏幅度更大
                 let pnl_pct = match model.risk_level.as_str() {
-                    "LOW" => rng.gen_range(-0.025..0.06),
+                    "LOW" => rng.gen_range(-0.03..0.06),
                     "MEDIUM" => rng.gen_range(-0.05..0.12),
                     "HIGH" => rng.gen_range(-0.10..0.20),
                     _ => rng.gen_range(-0.05..0.10),
                 };
 
                 let realized_pnl = base_value * pnl_pct;
-                let total_unrealized_pnl = base_value * rng.gen_range(-0.02..0.03);
+                let total_unrealized_pnl = base_value * rng.gen_range(-0.03..0.03);
                 let dollar_equity = base_value + realized_pnl + total_unrealized_pnl;
                 let return_pct = (realized_pnl / base_value) * 100.0;
 
-                // 期货交易频率和胜率
                 let (win_rate, trade_count) = match model.risk_level.as_str() {
-                    "LOW" => (rng.gen_range(0.55..0.70), rng.gen_range(40..100)),
-                    "MEDIUM" => (rng.gen_range(0.50..0.65), rng.gen_range(80..200)),
-                    "HIGH" => (rng.gen_range(0.45..0.60), rng.gen_range(150..400)),
-                    _ => (rng.gen_range(0.48..0.62), rng.gen_range(80..200)),
+                    "LOW" => (rng.gen_range(0.55..0.68), rng.gen_range(50..120)),
+                    "MEDIUM" => (rng.gen_range(0.50..0.65), rng.gen_range(100..250)),
+                    "HIGH" => (rng.gen_range(0.45..0.60), rng.gen_range(200..500)),
+                    _ => (rng.gen_range(0.48..0.62), rng.gen_range(100..300)),
                 };
 
                 accounts.push(ModelAccount {
@@ -485,9 +439,9 @@ impl AccountManagement for CtpBroker {
                     return_pct,
                     cum_pnl_pct: return_pct,
                     sharpe_ratio: if return_pct > 0.0 {
-                        rng.gen_range(0.6..2.0)
+                        rng.gen_range(0.8..2.5)
                     } else {
-                        rng.gen_range(-0.8..0.6)
+                        rng.gen_range(-0.5..0.8)
                     },
                     win_rate,
                     total_trades: trade_count,
@@ -506,36 +460,35 @@ impl AccountManagement for CtpBroker {
     ) -> impl std::future::Future<Output = Result<Positions, Box<dyn std::error::Error>>> + Send
     {
         async move {
-            let instruments = self.get_instruments();
+            let symbols = self.get_symbols();
             let mut rng = rand::thread_rng();
             let now = chrono::Utc::now().timestamp();
             let mut positions = HashMap::new();
 
-            let num_positions = rng.gen_range(2..=4).min(instruments.len());
+            let num_positions = rng.gen_range(3..=6).min(symbols.len());
 
             for i in 0..num_positions {
-                let instrument = &instruments[i];
-                let entry_price = self.get_base_price(instrument);
-                let current_price = entry_price * rng.gen_range(0.98..1.02);
-                let quantity = rng.gen_range(1.0..10.0); // 期货合约数量
-                let direction = if rng.gen_bool(0.5) { 1.0 } else { -1.0 };
-                
-                let multiplier = self.get_contract_multiplier(instrument);
-                let unrealized_pnl = (current_price - entry_price) * quantity * direction * multiplier;
-                let margin_rate = self.get_margin_rate(instrument);
-                let margin = entry_price * quantity * multiplier * margin_rate;
+                let symbol = &symbols[i];
+                let entry_price = self.get_base_price(symbol);
+                let current_price = entry_price * rng.gen_range(0.92..1.08);
+                let quantity = rng.gen_range(0.01..5.0);
+                let unrealized_pnl = (current_price - entry_price) * quantity;
 
                 positions.insert(
-                    instrument.clone(),
+                    symbol.clone(),
                     Position {
-                        symbol: instrument.clone(),
+                        symbol: symbol.clone(),
                         entry_price,
                         current_price,
-                        quantity: quantity * direction, // 正数=多头，负数=空头
+                        quantity,
                         unrealized_pnl,
-                        direction: Some(if direction > 0.0 { "long".to_string() } else { "short".to_string() }),
-                        leverage: None, // 期货不用杠杆概念，用保证金
-                        margin: Some(margin),
+                        direction: Some(if unrealized_pnl > 0.0 {
+                            "long".to_string()
+                        } else {
+                            "long".to_string()
+                        }),
+                        leverage: Some(rng.gen_range(1..=10)),
+                        margin: Some(entry_price * quantity / rng.gen_range(1..=10) as f64),
                         timestamp: now,
                     },
                 );
@@ -550,17 +503,16 @@ impl AccountManagement for CtpBroker {
     ) -> impl std::future::Future<Output = Result<Balance, Box<dyn std::error::Error>>> + Send {
         async move {
             let mut rng = rand::thread_rng();
-            let total = rng.gen_range(500000.0..3000000.0); // 期货账户资金较大
-            let margin_used = total * rng.gen_range(0.2..0.5); // 保证金占用
-            let frozen = margin_used * rng.gen_range(0.05..0.15); // 冻结保证金
+            let total = rng.gen_range(50000.0..200000.0);
+            let margin_used = total * rng.gen_range(0.3..0.7);
             let available = total - margin_used;
 
             Ok(Balance {
                 total_balance: total,
                 available,
                 margin_used: Some(margin_used),
-                frozen_margin: Some(frozen),
-                currency: "CNY".to_string(), // 人民币
+                frozen_margin: Some(margin_used * rng.gen_range(0.1..0.3)),
+                currency: "USDT".to_string(),
                 timestamp: chrono::Utc::now().timestamp(),
             })
         }
@@ -574,8 +526,8 @@ impl AccountManagement for CtpBroker {
             Ok(BrokerAccount {
                 broker_id: self.id.clone(),
                 broker_name: self.name.clone(),
-                broker_type: "futures".to_string(), // 期货类型
-                protocol: Some("CTP".to_string()),
+                broker_type: "cryptocurrency".to_string(),
+                protocol: Some("REST+WebSocket".to_string()),
                 timestamp: chrono::Utc::now().timestamp(),
             })
         }
@@ -583,18 +535,18 @@ impl AccountManagement for CtpBroker {
 }
 
 // ============================================================================
-// Analytics Trait Implementation (分析与统计接口实现 - 改用强类型)
+// Analytics Trait Implementation (分析与统计接口实现)
 // ============================================================================
-impl Analytics for CtpBroker {
+impl Analytics for BinanceBroker {
     fn get_analytics(
         &self,
     ) -> impl std::future::Future<Output = Result<AnalyticsData, Box<dyn std::error::Error>>> + Send
     {
         async move {
             let mut metrics = HashMap::new();
-            metrics.insert("total_models".to_string(), 4.0); // 4个模型
-            metrics.insert("total_volume_24h".to_string(), 50000000.0);
-            metrics.insert("avg_trades_per_model".to_string(), 150.0);
+            metrics.insert("total_models".to_string(), 3.0);
+            metrics.insert("total_volume_24h".to_string(), 150000000.0);
+            metrics.insert("avg_trades_per_model".to_string(), 250.0);
 
             Ok(AnalyticsData { metrics })
         }
@@ -614,9 +566,9 @@ impl Analytics for CtpBroker {
                     rank: (rank + 1) as i32,
                     model_id: model.model_id.clone(),
                     model_name: model.model_name.clone(),
-                    return_pct: rng.gen_range(-6.0..10.0), // 期货收益波动大
-                    sharpe_ratio: rng.gen_range(0.4..1.8),
-                    total_trades: rng.gen_range(80..400),
+                    return_pct: rng.gen_range(-5.0..15.0),
+                    sharpe_ratio: rng.gen_range(0.5..2.5),
+                    total_trades: rng.gen_range(100..500),
                     win_rate: rng.gen_range(0.45..0.65),
                 });
             }
