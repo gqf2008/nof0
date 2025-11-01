@@ -59,6 +59,11 @@ func RegisterHandlers(server *rest.Server, serverCtx *svc.ServiceContext) {
 				Path:    "/conversations",
 				Handler: ConversationsHandler(serverCtx),
 			},
+			{
+				Method:  http.MethodGet,
+				Path:    "/config/exchanges",
+				Handler: ConfigHandler(serverCtx),
+			},
 		},
 		rest.WithPrefix("/api"),
 	)

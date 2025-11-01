@@ -101,6 +101,7 @@ pub async fn run_http_server(addr: SocketAddr, url: String) -> anyhow::Result<()
                 Json(config)
             }),
         )
+        .route("/api/config/exchanges", get(get_exchanges_config))
         .route("/health", get(health))
         .fallback(static_handler)
         .with_state(state)
@@ -317,6 +318,62 @@ fn looks_like_static_asset(path: &str) -> bool {
 
 async fn health() -> impl IntoResponse {
     Json(HashMap::from([("status", "ok")]))
+}
+
+#[derive(serde::Serialize)]
+struct ExchangeConfig {
+    id: String,
+    name: String,
+    name_en: String,
+    description: String,
+    icon: String,
+    color: String,
+    enabled: bool,
+    status: String,
+    route: String,
+    api_endpoint: String,
+    features: Vec<String>,
+}
+
+#[derive(serde::Serialize)]
+struct ExchangesConfigResponse {
+    exchanges: Vec<ExchangeConfig>,
+    settings: serde_json::Value,
+}
+
+async fn get_exchanges_config() -> impl IntoResponse {
+    // 从配置文件加载交易所配置
+    let config = BrokersConfig::load_default().unwrap_or_default();
+
+    // 转换为前端需要的格式
+    let exchanges: Vec<ExchangeConfig> = config
+        .brokers
+        .iter()
+        .map(|broker| ExchangeConfig {
+            id: broker.id.clone(),
+            name: broker.name.clone(),
+            name_en: broker.name_en.clone(),
+            description: broker.description.clone(),
+            icon: broker.icon.clone(),
+            color: broker.color.clone(),
+            enabled: broker.enabled,
+            status: broker.status.clone(),
+            route: broker.route.clone(),
+            api_endpoint: broker.api_endpoint.clone(),
+            features: broker.features.clone(),
+        })
+        .collect();
+
+    let response = ExchangesConfigResponse {
+        exchanges,
+        settings: serde_json::json!({
+            "defaultExchange": "crypto",
+            "refreshInterval": config.settings.refresh_interval * 1000, // 转换为毫秒
+            "autoConnect": config.settings.auto_connect,
+        }),
+    };
+
+    Json(response)
 }
 
 fn cache_control(segment: &str) -> String {

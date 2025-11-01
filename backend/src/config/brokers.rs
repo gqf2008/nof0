@@ -83,7 +83,8 @@ pub struct GlobalSettings {
 /// 经纪商配置文件
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct BrokersConfig {
-    /// 经纪商列表
+    /// 经纪商列表（支持 exchanges 和 brokers 两个字段名）
+    #[serde(alias = "exchanges")]
     pub brokers: Vec<BrokerConfig>,
 
     /// 全局设置

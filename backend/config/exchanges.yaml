@@ -42,7 +42,7 @@ exchanges:
       md_address: "tcp://180.168.146.187:10131"
       td_address: "tcp://180.168.146.187:10130"
 
-  # 币安交易所（示例，未启用）
+  # 币安交易所
   - id: "binance"
     name: "币安交易所"
     name_en: "Binance"
@@ -50,13 +50,33 @@ exchanges:
     icon: "🔶"
     color: "#f3ba2f"
     enabled: true
-    status: "开发中"
+    status: "运行中"
     route: "/binance"
     api_endpoint: "https://api.binance.com"
+    data_source: "proxy"
     features:
       - "现货交易"
       - "合约交易"
       - "理财产品"
+      - "杠杆交易"
+
+  # OKX交易所
+  - id: "okx"
+    name: "OKX 交易所"
+    name_en: "OKX"
+    description: "全球化的加密货币交易所 - 前身为OKEx"
+    icon: "⭕"
+    color: "#000000"
+    enabled: true
+    status: "运行中"
+    route: "/okx"
+    api_endpoint: "https://www.okx.com"
+    data_source: "proxy"
+    features:
+      - "现货交易"
+      - "合约交易"
+      - "期权交易"
+      - "DeFi产品"
 
   # Bybit交易所（新增）
   - id: "bybit"
