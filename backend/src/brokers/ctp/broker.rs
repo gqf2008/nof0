@@ -1,9 +1,14 @@
 use crate::brokers::*;
 use rand::Rng;
 use std::collections::HashMap;
+use std::sync::Arc;
+use tokio::sync::RwLock;
 
 use super::adapter::CtpMarketAdapter;
 use super::types::*;
+
+#[cfg(feature = "ctp-real")]
+use super::real_connection::RealCtpConnection;
 
 /// CTP 经纪商实现 (改进版 - 使用强类型)
 /// 基于 CTP (Comprehensive Transaction Platform) 柜台协议
@@ -14,18 +19,87 @@ pub struct CtpBroker {
     name: String,
     config: CtpConfig,
     adapter: CtpMarketAdapter,
+
+    /// 真实 CTP 连接 (仅在启用 ctp-real feature 时可用)
+    #[cfg(feature = "ctp-real")]
+    real_connection: Option<Arc<RwLock<RealCtpConnection>>>,
 }
 
 #[allow(dead_code)]
 impl CtpBroker {
     pub fn new(id: String, name: String, config: CtpConfig) -> Self {
         let adapter = CtpMarketAdapter::new(config.clone());
+
+        #[cfg(feature = "ctp-real")]
+        let real_connection = if !config.mock_mode {
+            tracing::info!("🔌 初始化真实 CTP 连接...");
+            Some(Arc::new(RwLock::new(RealCtpConnection::new(
+                config.clone(),
+            ))))
+        } else {
+            tracing::info!("🎭 使用 Mock 模式");
+            None
+        };
+
+        #[cfg(not(feature = "ctp-real"))]
+        if !config.mock_mode {
+            tracing::warn!("⚠️ mock_mode=false 但 ctp-real feature 未启用，将使用 mock 数据");
+        }
+
         Self {
             id,
             name,
             config,
             adapter,
+            #[cfg(feature = "ctp-real")]
+            real_connection,
         }
+    }
+
+    /// 连接到 CTP 服务器 (仅在真实模式下)
+    #[cfg(feature = "ctp-real")]
+    pub async fn connect(&self) -> Result<(), Box<dyn std::error::Error>> {
+        if let Some(ref conn) = self.real_connection {
+            tracing::info!("🔗 正在连接 CTP 服务器: {}", self.config.md_address);
+            let mut conn = conn.write().await;
+            conn.connect().await?;
+            tracing::info!("✅ CTP 服务器连接成功");
+            Ok(())
+        } else {
+            tracing::warn!("⚠️ Mock 模式下无需连接");
+            Ok(())
+        }
+    }
+
+    #[cfg(not(feature = "ctp-real"))]
+    pub async fn connect(&self) -> Result<(), Box<dyn std::error::Error>> {
+        tracing::warn!("⚠️ ctp-real feature 未启用，无法连接真实 CTP 服务器");
+        Ok(())
+    }
+
+    /// 订阅行情数据 (仅在真实模式下)
+    #[cfg(feature = "ctp-real")]
+    pub async fn subscribe_market_data(
+        &self,
+        instruments: Vec<String>,
+    ) -> Result<(), Box<dyn std::error::Error>> {
+        if let Some(ref conn) = self.real_connection {
+            let conn = conn.read().await;
+            conn.subscribe_market_data(instruments).await?;
+            Ok(())
+        } else {
+            tracing::warn!("⚠️ Mock 模式下无需订阅");
+            Ok(())
+        }
+    }
+
+    #[cfg(not(feature = "ctp-real"))]
+    pub async fn subscribe_market_data(
+        &self,
+        _instruments: Vec<String>,
+    ) -> Result<(), Box<dyn std::error::Error>> {
+        tracing::warn!("⚠️ ctp-real feature 未启用");
+        Ok(())
     }
 
     /// 获取 CTP 支持的期货合约列表 (更新到2025年合约)
@@ -64,16 +138,16 @@ impl CtpBroker {
     /// 获取合约乘数 (用于计算保证金和盈亏)
     fn get_contract_multiplier(&self, instrument: &str) -> f64 {
         match instrument {
-            s if s.starts_with("IF") => 300.0,   // 沪深300
-            s if s.starts_with("IC") => 200.0,   // 中证500
-            s if s.starts_with("IH") => 300.0,   // 上证50
-            s if s.starts_with("IM") => 200.0,   // 中证1000
-            s if s.starts_with("rb") => 10.0,    // 螺纹钢
-            s if s.starts_with("hc") => 10.0,    // 热轧卷板
-            s if s.starts_with("i") => 100.0,    // 铁矿石
-            s if s.starts_with("au") => 1000.0,  // 黄金
-            s if s.starts_with("ag") => 15.0,    // 白银
-            s if s.starts_with("cu") => 5.0,     // 铜
+            s if s.starts_with("IF") => 300.0,  // 沪深300
+            s if s.starts_with("IC") => 200.0,  // 中证500
+            s if s.starts_with("IH") => 300.0,  // 上证50
+            s if s.starts_with("IM") => 200.0,  // 中证1000
+            s if s.starts_with("rb") => 10.0,   // 螺纹钢
+            s if s.starts_with("hc") => 10.0,   // 热轧卷板
+            s if s.starts_with("i") => 100.0,   // 铁矿石
+            s if s.starts_with("au") => 1000.0, // 黄金
+            s if s.starts_with("ag") => 15.0,   // 白银
+            s if s.starts_with("cu") => 5.0,    // 铜
             _ => 1.0,
         }
     }
@@ -81,7 +155,13 @@ impl CtpBroker {
     /// 获取保证金率
     fn get_margin_rate(&self, instrument: &str) -> f64 {
         match instrument {
-            s if s.starts_with("IF") | s.starts_with("IC") | s.starts_with("IH") | s.starts_with("IM") => 0.12, // 股指期货 12%
+            s if s.starts_with("IF")
+                | s.starts_with("IC")
+                | s.starts_with("IH")
+                | s.starts_with("IM") =>
+            {
+                0.12
+            } // 股指期货 12%
             _ => 0.10, // 商品期货 10%
         }
     }
@@ -269,7 +349,48 @@ impl MarketData for CtpBroker {
     ) -> impl std::future::Future<Output = Result<Ticker24h, Box<dyn std::error::Error>>> + Send
     {
         let symbol = symbol.to_string();
+
+        #[cfg(feature = "ctp-real")]
+        let real_connection = self.real_connection.clone();
+
         async move {
+            // 尝试使用真实 CTP 连接
+            #[cfg(feature = "ctp-real")]
+            {
+                if let Some(ref conn) = real_connection {
+                    tracing::debug!("📊 从真实 CTP 获取 {} 行情", symbol);
+                    let conn_guard = conn.read().await;
+                    match conn_guard.get_market_data(&symbol).await {
+                        Ok(ctp_data) => {
+                            // 计算涨跌幅 (简化版本，真实应该有昨收盘价)
+                            let change_pct = if ctp_data.last_price > 0.0 {
+                                ((ctp_data.last_price - self.get_base_price(&symbol))
+                                    / self.get_base_price(&symbol))
+                                    * 100.0
+                            } else {
+                                0.0
+                            };
+
+                            return Ok(Ticker24h {
+                                symbol: symbol.clone(),
+                                last_price: ctp_data.last_price,
+                                change_24h: change_pct,
+                                high_24h: ctp_data.highest_price,
+                                low_24h: ctp_data.lowest_price,
+                                volume_24h: ctp_data.volume as f64,
+                                open_interest: Some(ctp_data.open_interest as i64),
+                                timestamp: chrono::Utc::now().timestamp(),
+                            });
+                        }
+                        Err(e) => {
+                            tracing::warn!("⚠️ 真实 CTP 获取失败，回退到 mock: {}", e);
+                        }
+                    }
+                }
+            }
+
+            // Mock 模式或真实连接失败时的回退逻辑
+            tracing::debug!("🎭 使用 mock 数据生成 {} 行情", symbol);
             let mut rng = rand::thread_rng();
             let price = self.get_base_price(&symbol);
             let change_pct = rng.gen_range(-4.0..4.0); // 期货日内波动
@@ -519,9 +640,10 @@ impl AccountManagement for CtpBroker {
                 let current_price = entry_price * rng.gen_range(0.98..1.02);
                 let quantity = rng.gen_range(1.0..10.0); // 期货合约数量
                 let direction = if rng.gen_bool(0.5) { 1.0 } else { -1.0 };
-                
+
                 let multiplier = self.get_contract_multiplier(instrument);
-                let unrealized_pnl = (current_price - entry_price) * quantity * direction * multiplier;
+                let unrealized_pnl =
+                    (current_price - entry_price) * quantity * direction * multiplier;
                 let margin_rate = self.get_margin_rate(instrument);
                 let margin = entry_price * quantity * multiplier * margin_rate;
 
@@ -533,7 +655,11 @@ impl AccountManagement for CtpBroker {
                         current_price,
                         quantity: quantity * direction, // 正数=多头，负数=空头
                         unrealized_pnl,
-                        direction: Some(if direction > 0.0 { "long".to_string() } else { "short".to_string() }),
+                        direction: Some(if direction > 0.0 {
+                            "long".to_string()
+                        } else {
+                            "short".to_string()
+                        }),
                         leverage: None, // 期货不用杠杆概念，用保证金
                         margin: Some(margin),
                         timestamp: now,
@@ -621,7 +747,9 @@ impl Analytics for CtpBroker {
                 });
             }
 
-            Ok(Leaderboard { leaderboard: entries })
+            Ok(Leaderboard {
+                leaderboard: entries,
+            })
         }
     }
 
@@ -640,7 +768,11 @@ impl Analytics for CtpBroker {
         &self,
     ) -> impl std::future::Future<Output = Result<Conversations, Box<dyn std::error::Error>>> + Send
     {
-        async move { Ok(Conversations { conversations: vec![] }) }
+        async move {
+            Ok(Conversations {
+                conversations: vec![],
+            })
+        }
     }
 
     fn get_models_list(

@@ -4,6 +4,7 @@
     windows_subsystem = "windows"
 )]
 
+mod api;
 mod brokers;
 mod config;
 mod engine;

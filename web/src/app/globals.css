@@ -125,7 +125,9 @@
 /* explicit theme overrides via data-theme */
 :root[data-theme="light"] {
   --background: #ffffff;
-  --foreground: #171717;
+  --foreground: #000000; /* 纯黑文字 匹配 nof1.ai */
+  --foreground-muted: #333333; /* 次级文字 */
+  --foreground-subtle: #666666; /* 三级文字 */
   --chart-logo-bg: rgba(0, 0, 0, 0.75);
   --chart-logo-ring: rgba(0, 0, 0, 0.25);
   --logo-chip-bg: rgba(0, 0, 0, 0.06);
@@ -133,26 +135,41 @@
   --skeleton-bg: rgba(0, 0, 0, 0.1);
   --watermark-color: rgba(0, 0, 0, 0.06);
 
-  /* light theme overrides - 黑白粗线条风格 */
+  /* light theme overrides - 完全匹配 nof1.ai 黑白粗线条风格 */
+  --surface: #ffffff;
+  --surface-elevated: #f8f9fa;
+  --surface-hover: #f1f3f4;
   --panel-bg: #ffffff;
   --panel-border: #000000; /* 纯黑边框 */
+  --border: #000000; /* 纯黑边框 */
+  --border-subtle: #cccccc; /* 次级边框 */
   --muted-text: #666666;
   --axis-tick: #999999;
   --grid-stroke: rgba(0, 0, 0, 0.1);
   --ref-line: #cccccc;
   --chip-border: #000000; /* 纯黑边框 */
-  --btn-active-bg: rgba(0, 0, 0, 0.1);
-  --btn-active-fg: #000000;
+  --btn-active-bg: #000000; /* 激活按钮纯黑 */
+  --btn-active-fg: #ffffff; /* 激活按钮白字 */
   --btn-inactive-fg: #666666;
-  --btn-hover-bg: rgba(0, 0, 0, 0.05);
+  --btn-hover-bg: #f1f3f4; /* 悬停背景 */
   --tooltip-bg: #ffffff;
   --tooltip-border: #000000; /* 纯黑边框 */
   --tooltip-fg: #000000;
+  /* terminal colors */
+  --terminal-green: #00aa00;
+  --terminal-red: #cc0000;
+  --terminal-yellow: #b8860b;
+  --terminal-blue: #0000aa;
+  /* accent colors */
+  --accent-primary: #0000ff; /* nof1.ai 蓝色 */
+  --accent-success: #00aa00;
+  --accent-warning: #ffaa00;
+  --accent-error: #ff0000;
   /* apply only in light theme: fallback for too-light line colors */
   --line-too-light-fallback: #4b5563; /* neutral dark for visibility */
   --table-row-alt: rgba(0, 0, 0, 0.05);
   --link-hover: #000000;
-  --brand-accent: #7c3aed; /* purple-600 */
+  --brand-accent: #0000ff; /* 改为纯蓝色 匹配 nof1.ai */
   --header-bg: #f5f5f5;
   --header-border: #000000; /* 纯黑边框 */
 }
@@ -342,6 +359,81 @@ body {
 .chip-btn.active {
   background: var(--btn-active-bg);
   color: var(--btn-active-fg);
+}
+
+/* Terminal 风格组件 - 完全匹配 nof1.ai */
+.terminal-border {
+  border: 2px solid var(--border);
+  border-collapse: collapse;
+  border-radius: 0 !important;
+}
+
+/* Terminal card with hover effect */
+.terminal-card {
+  border: 2px solid var(--border);
+  border-collapse: collapse;
+  border-radius: 0 !important;
+  background: var(--surface);
+  transition: none;
+}
+.terminal-card:hover {
+  background: var(--surface-hover);
+}
+
+.terminal-button {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  color: var(--foreground);
+  font-family: "IBM Plex Mono", monospace;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  padding: 0.25rem 0.75rem;
+  cursor: pointer;
+  transition: none;
+  font-size: 0.75rem;
+  border-radius: 0 !important;
+}
+.terminal-button:hover {
+  background: var(--surface-hover);
+}
+.terminal-button.active {
+  background: var(--foreground);
+  color: var(--background);
+}
+
+.terminal-button-small {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  color: var(--foreground);
+  font-family: "IBM Plex Mono", monospace;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  padding: 0.09rem 0.5rem;
+  cursor: pointer;
+  transition: none;
+  font-size: 0.5rem;
+  width: auto;
+  flex-shrink: 0;
+  border-radius: 0 !important;
+}
+@media (min-width: 768px) {
+  .terminal-button-small {
+    font-size: 0.6875rem;
+  }
+}
+@media (max-width: 767px) {
+  .terminal-button-small {
+    font-size: 0.65rem;
+  }
+}
+.terminal-button-small:hover {
+  background: var(--surface-hover);
+}
+.terminal-button-small.active {
+  background: var(--foreground);
+  color: var(--background);
 }
 
 /* 边框宽度标准化 - 使用粗线条 */

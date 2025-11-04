@@ -20,6 +20,7 @@ use tower_http::{
 };
 use tracing::{error, info};
 
+use crate::api::{adapters::CtpMockAdapter, create_unified_routes, ExchangeManager};
 use crate::config::BrokersConfig;
 use crate::engine::TradingEngine;
 use crate::mcp::{GetPriceTool, McpServer, PlaceOrderTool};
@@ -84,14 +85,8 @@ pub async fn run_http_server(addr: SocketAddr, url: String) -> anyhow::Result<()
         .allow_headers(Any)
         .expose_headers([header::ETAG, header::LAST_MODIFIED]);
 
-    // 创建 CTP 路由 (独立的 Router，有自己的 state)
-    #[cfg(feature = "ctp-real")]
-    let ctp_routes = {
-        info!("Initializing CTP Web API routes");
-        crate::brokers::ctp::create_ctp_routes()
-    };
-
-    let mut app = Router::new()
+    // 创建主应用路由(需要 AppState)
+    let app_routes = Router::new()
         .route("/api/nof1/{*path}", get(proxy))
         .route(
             "/api/config/brokers",
@@ -104,7 +99,37 @@ pub async fn run_http_server(addr: SocketAddr, url: String) -> anyhow::Result<()
         .route("/api/config/exchanges", get(get_exchanges_config))
         .route("/health", get(health))
         .fallback(static_handler)
-        .with_state(state)
+        .with_state(state);
+
+    // 创建统一 API 交易所管理器
+    info!("🚀 Initializing Unified API Exchange Manager");
+    let mut exchange_manager = ExchangeManager::new();
+    
+    // 注册 CTP Mock 适配器
+    let ctp_adapter = Arc::new(CtpMockAdapter::new("ctp", "CTP期货"));
+    exchange_manager.register(ctp_adapter);
+    info!("✅ Registered exchange adapter: CTP");
+    
+    // TODO: 注册更多交易所适配器
+    // let binance_adapter = Arc::new(BinanceAdapter::new("binance", "币安"));
+    // exchange_manager.register(binance_adapter);
+    
+    let exchange_manager = Arc::new(exchange_manager);
+    
+    // 创建统一 API 路由(无状态)
+    let unified_routes = create_unified_routes(exchange_manager.clone());
+
+    // 创建 CTP 路由 (快速版本：直接使用 Broker)
+    #[cfg(feature = "ctp-real")]
+    let ctp_routes = {
+        info!("Initializing CTP Quick Web API routes (with Broker)");
+        crate::brokers::ctp::create_quick_ctp_routes()
+    };
+
+    // 合并所有路由
+    let mut app = Router::new()
+        .merge(unified_routes) // 挂载统一 API (无状态)
+        .merge(app_routes)     // 挂载主应用路由 (有状态)
         .layer(cors)
         .layer(TraceLayer::new_for_http());
 

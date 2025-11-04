@@ -46,84 +46,97 @@ export default function NavigationPage() {
   return (
     <main className="w-full min-h-[calc(100vh-var(--header-h))] flex items-center justify-center p-8">
       <div className="max-w-6xl w-full">
-        {/* 标题 */}
+        {/* 标题 - Terminal 风格 */}
         <div className="text-center mb-12">
-          <h1 className="text-4xl font-bold mb-4" style={{ color: "var(--brand-accent)" }}>
-            交易所导航
+          <h1 className="terminal-header text-4xl mb-4" style={{ color: "var(--foreground)" }}>
+            EXCHANGE NAVIGATION
           </h1>
-          <p className="text-lg text-zinc-400">
-            选择一个交易所进入实时监控界面
+          <p className="terminal-text text-base" style={{ color: "var(--foreground-muted)" }}>
+            SELECT AN EXCHANGE TO ENTER REAL-TIME MONITORING
           </p>
         </div>
 
-        {/* 交易所卡片网格 */}
+        {/* 交易所卡片网格 - Terminal 风格 */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          {loading && <div className="text-white text-xl col-span-2 text-center">加载中...</div>}
-          {error && <div className="text-red-500 text-xl col-span-2 text-center">{error}</div>}
+          {loading && (
+            <div className="terminal-text text-xl col-span-2 text-center" style={{ color: "var(--foreground)" }}>
+              LOADING...
+            </div>
+          )}
+          {error && (
+            <div className="terminal-text text-xl col-span-2 text-center" style={{ color: "var(--accent-error)" }}>
+              {error.toUpperCase()}
+            </div>
+          )}
           {!loading && !error && exchanges.map((exchange) => (
             <Link
               key={exchange.id}
               to={exchange.route}
-              className="group"
+              className="block"
             >
-              <div
-                className="border-2 rounded-xl p-8 transition-all duration-300 hover:scale-105 hover:shadow-2xl"
-                style={{
-                  borderColor: "var(--panel-border)",
-                  background: "var(--card-bg)",
-                }}
-              >
-                {/* 图标 */}
+              <div className="terminal-card p-8">
+                {/* 图标和状态 */}
                 <div className="flex items-center justify-between mb-6">
-                  <div
-                    className="text-6xl"
-                    style={{
-                      filter: "drop-shadow(0 0 10px rgba(255, 255, 255, 0.3))",
-                    }}
-                  >
+                  <div className="text-6xl">
                     {exchange.icon}
                   </div>
                   <div
-                    className="px-3 py-1 rounded-full text-xs font-semibold"
+                    className="terminal-button-small"
                     style={{
-                      background: "rgba(0, 255, 0, 0.1)",
-                      color: "#00ff00",
-                      border: "1px solid rgba(0, 255, 0, 0.3)",
+                      background: exchange.status === "运行中" 
+                        ? "rgba(0, 170, 0, 0.1)" 
+                        : "rgba(170, 170, 170, 0.1)",
+                      color: exchange.status === "运行中" 
+                        ? "var(--terminal-green)" 
+                        : "var(--foreground-muted)",
+                      borderColor: exchange.status === "运行中"
+                        ? "var(--terminal-green)"
+                        : "var(--border-subtle)",
                     }}
                   >
-                    {exchange.status}
+                    {exchange.status.toUpperCase()}
                   </div>
                 </div>
 
-                {/* 标题 */}
+                {/* 标题 - Terminal 风格 */}
                 <h2
-                  className="text-2xl font-bold mb-3 group-hover:text-opacity-80 transition-colors"
-                  style={{ color: exchange.color }}
+                  className="terminal-header text-2xl mb-3"
+                  style={{ color: "var(--foreground)" }}
                 >
-                  {exchange.name}
+                  {exchange.name.toUpperCase()}
                 </h2>
 
-                {/* 描述 */}
-                <p className="text-zinc-400 mb-6">{exchange.description}</p>
+                {/* 英文名称 */}
+                <p className="terminal-text text-sm mb-2" style={{ color: "var(--foreground-muted)" }}>
+                  {exchange.name_en.toUpperCase()}
+                </p>
 
-                {/* 进入按钮 */}
-                <div className="flex items-center justify-end text-sm font-semibold">
-                  <span
-                    className="group-hover:translate-x-2 transition-transform"
-                    style={{ color: exchange.color }}
+                {/* 描述 */}
+                <p className="terminal-text text-sm mb-6" style={{ color: "var(--foreground-subtle)" }}>
+                  {exchange.description}
+                </p>
+
+                {/* 进入按钮 - Terminal 风格 */}
+                <div className="flex items-center justify-end">
+                  <button
+                    className="terminal-button"
+                    style={{
+                      borderColor: "var(--border)",
+                      background: "var(--surface-elevated)",
+                    }}
                   >
-                    进入监控 →
-                  </span>
+                    ENTER MONITORING →
+                  </button>
                 </div>
               </div>
             </Link>
           ))}
         </div>
 
-        {/* 底部提示 */}
+        {/* 底部提示 - Terminal 风格 */}
         <div className="mt-12 text-center">
-          <p className="text-sm text-zinc-500">
-            💡 提示: 每个交易所都有独立的实时监控、持仓管理和交易功能
+          <p className="terminal-text text-xs" style={{ color: "var(--foreground-subtle)" }}>
+            ⚡ INDEPENDENT REAL-TIME MONITORING, POSITION MANAGEMENT AND TRADING FOR EACH EXCHANGE
           </p>
         </div>
       </div>

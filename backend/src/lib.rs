@@ -1,5 +1,6 @@
 // Library exports for examples and tests
 
+pub mod api;
 pub mod brokers;
 pub mod config;
 pub mod engine;

@@ -48,6 +48,7 @@ chrono = { version = "0.4", features = ["serde"] }
 webbrowser = "1.0"
 rand = "0.8"
 url = "2.5"
+uuid = { version = "1.0", features = ["v4", "serde"] }
 
 # CTP期货交易接口 (https://github.com/pseudocodes/ctp2rs)
 # 注意: ctp2rs需要CTP SDK的动态链接库

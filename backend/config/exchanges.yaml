@@ -37,10 +37,283 @@ exchanges:
       - "持仓监控"
       - "交易执行"
       - "风险控制"
+    # 默认配置（当前使用）
     config:
       broker_id: "9999"
-      md_address: "tcp://180.168.146.187:10131"
-      td_address: "tcp://180.168.146.187:10130"
+      md_address: "tcp://trading.openctp.cn:30011"
+      td_address: "tcp://trading.openctp.cn:30001"
+      app_id: ""
+      auth_code: ""
+      user_product_info: "nof0"
+      mock_mode: true # 默认使用 Mock 模式（稳定可靠）
+
+    # 可用柜台列表（从 brokers.xml 导入）
+    brokers:
+      # OpenCTP 柜台
+      - name: "openctp-7x24"
+        broker_id: "9999"
+        app_id: ""
+        auth_code: ""
+        user_product_info: "MiniTrader"
+        td_address: "tcp://trading.openctp.cn:30001"
+        md_address: "tcp://trading.openctp.cn:30011"
+        description: "OpenCTP 7x24 测试环境"
+        recommended: true
+
+      - name: "openctp-期货仿真"
+        broker_id: "9999"
+        app_id: ""
+        auth_code: ""
+        user_product_info: "MiniTrader"
+        td_address: "tcp://trading.openctp.cn:30002"
+        md_address: "tcp://1.202.244.22:21413"
+        description: "OpenCTP 期货仿真环境"
+
+      - name: "openctp-股票仿真"
+        broker_id: "9999"
+        app_id: ""
+        auth_code: ""
+        user_product_info: "MiniTrader"
+        td_address: "tcp://trading.openctp.cn:30002"
+        md_address: "tcp://0.0.0.0:0"
+        description: "OpenCTP 股票仿真环境（需VIP）"
+
+      - name: "openctp-VIP股票仿真"
+        broker_id: "9999"
+        app_id: ""
+        auth_code: ""
+        user_product_info: "MiniTrader"
+        td_address: "tcp://vip.openctp.cn:30003"
+        md_address: "tcp://0.0.0.0:0"
+        description: "OpenCTP VIP 股票仿真"
+
+      - name: "openctp-VIP期货仿真"
+        broker_id: "9999"
+        app_id: ""
+        auth_code: ""
+        user_product_info: "MiniTrader"
+        td_address: "tcp://vip.openctp.cn:30003"
+        md_address: "tcp://180.169.112.55:42213"
+        description: "OpenCTP VIP 期货仿真"
+
+      - name: "openctp-VIP股票期权仿真"
+        broker_id: "9999"
+        app_id: ""
+        auth_code: ""
+        user_product_info: "MiniTrader"
+        td_address: "tcp://vip.openctp.cn:30003"
+        md_address: "tcp://114.94.16.228:18585"
+        description: "OpenCTP VIP 股票期权仿真"
+
+      # SimNow 柜台
+      - name: "simnow-7x24"
+        broker_id: "9999"
+        app_id: "simnow_client_test"
+        auth_code: "0000000000000000"
+        user_product_info: "MiniTrader"
+        td_address: "tcp://182.254.243.31:40001"
+        md_address: "tcp://182.254.243.31:40011"
+        description: "SimNow 7x24 测试环境"
+        recommended: true
+
+      - name: "simnow-仿真"
+        broker_id: "9999"
+        app_id: "simnow_client_test"
+        auth_code: "0000000000000000"
+        user_product_info: "MiniTrader"
+        td_addresses:
+          - "tcp://182.254.243.31:30001"
+          - "tcp://182.254.243.31:30002"
+          - "tcp://182.254.243.31:30003"
+        md_addresses:
+          - "tcp://182.254.243.31:30011"
+          - "tcp://182.254.243.31:30012"
+          - "tcp://182.254.243.31:30013"
+        description: "SimNow 仿真环境（多地址）"
+
+      # 期货公司柜台
+      - name: "海通期货-模拟-电信"
+        broker_id: "8000"
+        app_id: ""
+        auth_code: ""
+        user_product_info: "MiniTrader"
+        td_address: "tcp://124.74.247.227:31305"
+        md_address: "tcp://124.74.247.227:31313"
+        description: "海通期货模拟环境（电信线路）"
+
+      - name: "海通期货-模拟-联通"
+        broker_id: "8000"
+        app_id: ""
+        auth_code: ""
+        user_product_info: "MiniTrader"
+        td_address: "tcp://58.246.171.3:31305"
+        md_address: "tcp://58.246.171.3:31313"
+        description: "海通期货模拟环境（联通线路）"
+
+      # 股票期权柜台
+      - name: "宏源期货-CTP股票期权仿真"
+        broker_id: "8888"
+        app_id: "client_TextTrader_1.0"
+        auth_code: "P84BGC53MQZIBLFY"
+        user_product_info: "MiniTrader"
+        td_address: "tcp://118.26.194.228:42205"
+        md_address: "tcp://118.26.194.228:42213"
+        description: "宏源期货股票期权仿真"
+        type: "option"
+
+      - name: "兴证期货-CTP股票期权仿真"
+        broker_id: "8200"
+        app_id: "openctp_ticktrader_1.0.0"
+        auth_code: "V2B1CUV2C9RGF1SE"
+        user_product_info: "MiniTrader"
+        td_address: "tcp://58.32.234.179:46666"
+        md_address: "tcp://58.32.234.179:47777"
+        description: "兴证期货股票期权仿真"
+        type: "option"
+
+      # 股票柜台（其他接口）
+      - name: "华鑫证券股票-7x24"
+        broker_id: ""
+        app_id: ""
+        auth_code: ""
+        user_product_info: "MiniTrader"
+        td_address: "tcp://210.14.72.16:9500"
+        md_address: "tcp://210.14.72.16:9402"
+        description: "华鑫证券TORA接口 7x24"
+        type: "stock"
+        interface: "TORA"
+
+      - name: "华鑫证券股票-仿真"
+        broker_id: ""
+        app_id: ""
+        auth_code: ""
+        user_product_info: "MiniTrader"
+        td_address: "tcp://210.14.72.21:4400"
+        md_address: "tcp://210.14.72.21:4402"
+        description: "华鑫证券TORA接口仿真"
+        type: "stock"
+        interface: "TORA"
+
+      - name: "华鑫证券股票期权-7x24"
+        broker_id: ""
+        app_id: ""
+        auth_code: ""
+        user_product_info: "MiniTrader"
+        td_address: "tcp://210.14.72.17:15500"
+        md_address: "tcp://210.14.72.16:9402"
+        description: "华鑫证券股票期权 7x24"
+        type: "stock_option"
+        interface: "TORA"
+
+      - name: "华鑫证券股票期权-仿真"
+        broker_id: ""
+        app_id: ""
+        auth_code: ""
+        user_product_info: "MiniTrader"
+        td_address: "tcp://210.14.72.14:4400"
+        md_address: "tcp://210.14.72.21:4402"
+        description: "华鑫证券股票期权仿真"
+        type: "stock_option"
+        interface: "TORA"
+
+      - name: "中泰XTP股票-7x24"
+        broker_id: ""
+        app_id: "b8aa7173bba3470e390d787219b2112e"
+        auth_code: "100"
+        user_product_info: "MiniTrader"
+        td_address: "tcp://122.112.139.0:6101"
+        md_address: "tcp://119.3.103.38:6002"
+        description: "中泰XTP接口 7x24"
+        type: "stock"
+        interface: "XTP"
+
+      - name: "东财EMT股票-7x24"
+        broker_id: ""
+        app_id: "80"
+        auth_code: ""
+        user_product_info: "MiniTrader"
+        td_address: "tcp://61.152.230.41:19088"
+        md_address: "tcp://61.152.230.216:8093"
+        description: "东方财富EMT接口 7x24"
+        type: "stock"
+        interface: "EMT"
+
+      # 其他交易系统
+      - name: "易达模拟-上期品种"
+        broker_id: ""
+        app_id: "yd_dev_1.0"
+        auth_code: "ecbf8f06469eba63"
+        user_product_info: "MiniTrader"
+        td_address: "tcp://118.190.175.212:41500"
+        md_address: "tcp://118.190.175.212:41500"
+        description: "易达YD接口模拟环境"
+        interface: "YD"
+
+      - name: "量投QDP模拟"
+        broker_id: "ltkj"
+        app_id: "b827ef8a450041c85b1fa6ac1973e30a"
+        auth_code: "quantdo_api_229"
+        user_product_info: "MiniTrader"
+        td_address: "tcp://47.103.192.131:30005"
+        md_address: "tcp://139.224.188.64:30007"
+        description: "量投QDP接口模拟环境"
+        interface: "QDP"
+
+      - name: "量投QDP模拟-2"
+        broker_id: "ltkj"
+        app_id: "317332af239d8944bf4551f154928232"
+        auth_code: "quantdo_InfiniV8_1"
+        user_product_info: "MiniTrader"
+        td_address: "tcp://140.206.192.11:50035"
+        md_address: "tcp://140.206.192.11:50317"
+        description: "量投QDP接口模拟环境2"
+        interface: "QDP"
+
+      - name: "易盛V9"
+        broker_id: ""
+        app_id: "Demo_TestCollect"
+        auth_code: "Demo_TestCollect"
+        user_product_info: "MiniTrader"
+        td_address: "tcp://123.161.206.213:6160"
+        md_address: "tcp://123.161.206.213:6161"
+        description: "易盛TAP接口演示环境"
+        interface: "TAP"
+
+    # 真实期货公司生产环境配置说明
+    # ==========================================
+    # 注意：以上都是仿真/测试环境，真实生产环境需要：
+    # 1. 联系期货公司开通CTP交易权限
+    # 2. 获取真实的 broker_id、app_id、auth_code
+    # 3. 获取生产环境的服务器地址（通常不对外公开）
+    # 4. 签署风险协议并完成实名认证
+    #
+    # 主要期货公司（需要联系开通）：
+    # - 中信期货 (BrokerID: 66666)
+    # - 国泰君安期货 (BrokerID: 1001)
+    # - 银河期货 (BrokerID: 8888)
+    # - 华泰期货 (BrokerID: 8888)
+    # - 南华期货 (BrokerID: 8888)
+    # - 光大期货 (BrokerID: 9999)
+    # - 申银万国期货 (BrokerID: 8888)
+    # - 广发期货 (BrokerID: 8888)
+    # - 招商期货 (BrokerID: 9999)
+    # - 中粮期货 (BrokerID: 6868)
+    # - 永安期货 (BrokerID: 8888)
+    # - 东证期货 (BrokerID: 8000)
+    # - 方正中期期货 (BrokerID: 8080)
+    # - 浙商期货 (BrokerID: 8888)
+    # - 兴证期货 (BrokerID: 8200)
+    #
+    # 配置模板（真实环境示例）：
+    # - name: "某期货公司-生产"
+    #   broker_id: "实际BrokerID"
+    #   app_id: "实际AppID"
+    #   auth_code: "实际AuthCode"
+    #   user_product_info: "产品名称"
+    #   td_address: "tcp://生产服务器:端口"
+    #   md_address: "tcp://行情服务器:端口"
+    #   description: "生产环境"
+    #   type: "production"
 
   # 币安交易所
   - id: "binance"
