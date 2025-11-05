@@ -104,18 +104,18 @@ pub async fn run_http_server(addr: SocketAddr, url: String) -> anyhow::Result<()
     // 创建统一 API 交易所管理器
     info!("🚀 Initializing Unified API Exchange Manager");
     let mut exchange_manager = ExchangeManager::new();
-    
+
     // 注册 CTP Mock 适配器
     let ctp_adapter = Arc::new(CtpMockAdapter::new("ctp", "CTP期货"));
     exchange_manager.register(ctp_adapter);
     info!("✅ Registered exchange adapter: CTP");
-    
+
     // TODO: 注册更多交易所适配器
     // let binance_adapter = Arc::new(BinanceAdapter::new("binance", "币安"));
     // exchange_manager.register(binance_adapter);
-    
+
     let exchange_manager = Arc::new(exchange_manager);
-    
+
     // 创建统一 API 路由(无状态)
     let unified_routes = create_unified_routes(exchange_manager.clone());
 
@@ -129,7 +129,7 @@ pub async fn run_http_server(addr: SocketAddr, url: String) -> anyhow::Result<()
     // 合并所有路由
     let mut app = Router::new()
         .merge(unified_routes) // 挂载统一 API (无状态)
-        .merge(app_routes)     // 挂载主应用路由 (有状态)
+        .merge(app_routes) // 挂载主应用路由 (有状态)
         .layer(cors)
         .layer(TraceLayer::new_for_http());
 
@@ -141,7 +141,9 @@ pub async fn run_http_server(addr: SocketAddr, url: String) -> anyhow::Result<()
 
     info!("starting server at {}", addr);
 
-    axum::serve(tokio::net::TcpListener::bind(addr).await?, app)
+    let listener = tokio::net::TcpListener::bind(addr).await?;
+
+    axum::serve(listener, app)
         .with_graceful_shutdown(shutdown_signal())
         .await
         .context("server error")?;
@@ -346,6 +348,26 @@ async fn health() -> impl IntoResponse {
 }
 
 #[derive(serde::Serialize)]
+struct BrokerInfo {
+    id: String,
+    name: String,
+    broker_id: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    td_address: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    md_address: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    auth_code: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    app_id: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    user_product_info: Option<String>,
+    description: String,
+    recommended: bool,
+    category: String,
+}
+
+#[derive(serde::Serialize)]
 struct ExchangeConfig {
     id: String,
     name: String,
@@ -358,6 +380,8 @@ struct ExchangeConfig {
     route: String,
     api_endpoint: String,
     features: Vec<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    brokers: Option<Vec<BrokerInfo>>,
 }
 
 #[derive(serde::Serialize)]
@@ -367,34 +391,176 @@ struct ExchangesConfigResponse {
 }
 
 async fn get_exchanges_config() -> impl IntoResponse {
-    // 从配置文件加载交易所配置
-    let config = BrokersConfig::load_default().unwrap_or_default();
+    // 读取原始 YAML 配置文件
+    let config_path = std::path::Path::new("config/exchanges.yaml");
+    let config_str = match tokio::fs::read_to_string(config_path).await {
+        Ok(s) => s,
+        Err(e) => {
+            eprintln!("Failed to read config file: {:?}", e);
+            // fallback 到旧的实现
+            let config = BrokersConfig::load_default().unwrap_or_default();
+            let exchanges: Vec<ExchangeConfig> = config
+                .brokers
+                .iter()
+                .map(|broker| ExchangeConfig {
+                    id: broker.id.clone(),
+                    name: broker.name.clone(),
+                    name_en: broker.name_en.clone(),
+                    description: broker.description.clone(),
+                    icon: broker.icon.clone(),
+                    color: broker.color.clone(),
+                    enabled: broker.enabled,
+                    status: broker.status.clone(),
+                    route: broker.route.clone(),
+                    api_endpoint: broker.api_endpoint.clone(),
+                    features: broker.features.clone(),
+                    brokers: None,
+                })
+                .collect();
 
-    // 转换为前端需要的格式
-    let exchanges: Vec<ExchangeConfig> = config
-        .brokers
-        .iter()
-        .map(|broker| ExchangeConfig {
-            id: broker.id.clone(),
-            name: broker.name.clone(),
-            name_en: broker.name_en.clone(),
-            description: broker.description.clone(),
-            icon: broker.icon.clone(),
-            color: broker.color.clone(),
-            enabled: broker.enabled,
-            status: broker.status.clone(),
-            route: broker.route.clone(),
-            api_endpoint: broker.api_endpoint.clone(),
-            features: broker.features.clone(),
-        })
-        .collect();
+            return Json(ExchangesConfigResponse {
+                exchanges,
+                settings: serde_json::json!({
+                    "defaultExchange": "crypto",
+                    "refreshInterval": config.settings.refresh_interval * 1000,
+                    "autoConnect": config.settings.auto_connect,
+                }),
+            });
+        }
+    };
+
+    // 解析 YAML
+    let yaml_value: serde_yaml::Value = match serde_yaml::from_str(&config_str) {
+        Ok(v) => v,
+        Err(e) => {
+            eprintln!("Failed to parse YAML: {:?}", e);
+            return Json(ExchangesConfigResponse {
+                exchanges: vec![],
+                settings: serde_json::json!({}),
+            });
+        }
+    }; // 提取 exchanges 数组
+    let empty_vec = vec![];
+    let exchanges_array = yaml_value
+        .get("exchanges")
+        .and_then(|v| v.as_sequence())
+        .unwrap_or(&empty_vec);
+
+    let mut exchanges = Vec::new();
+    for exchange in exchanges_array {
+        let id = exchange.get("id").and_then(|v| v.as_str()).unwrap_or("");
+        let name = exchange.get("name").and_then(|v| v.as_str()).unwrap_or("");
+        let name_en = exchange
+            .get("name_en")
+            .and_then(|v| v.as_str())
+            .unwrap_or("");
+        let description = exchange
+            .get("description")
+            .and_then(|v| v.as_str())
+            .unwrap_or("");
+        let icon = exchange.get("icon").and_then(|v| v.as_str()).unwrap_or("");
+        let color = exchange.get("color").and_then(|v| v.as_str()).unwrap_or("");
+        let enabled = exchange
+            .get("enabled")
+            .and_then(|v| v.as_bool())
+            .unwrap_or(true);
+        let status = exchange
+            .get("status")
+            .and_then(|v| v.as_str())
+            .unwrap_or("offline");
+        let route = exchange.get("route").and_then(|v| v.as_str()).unwrap_or("");
+        let api_endpoint = exchange
+            .get("api_endpoint")
+            .and_then(|v| v.as_str())
+            .unwrap_or("");
+        let features = exchange
+            .get("features")
+            .and_then(|v| v.as_sequence())
+            .map(|arr| {
+                arr.iter()
+                    .filter_map(|f| f.as_str().map(|s| s.to_string()))
+                    .collect()
+            })
+            .unwrap_or_default();
+
+        // 检查是否有 brokers 字段
+        let brokers = exchange
+            .get("brokers")
+            .and_then(|v| v.as_sequence())
+            .map(|brokers_array| {
+                eprintln!("Found {} brokers for exchange {}", brokers_array.len(), id);
+                brokers_array
+                    .iter()
+                    .filter_map(|broker| {
+                        let broker_id = broker.get("name").and_then(|v| v.as_str())?;
+                        let broker_name = broker.get("name").and_then(|v| v.as_str())?;
+                        let broker_broker_id = broker.get("broker_id").and_then(|v| v.as_str())?;
+
+                        Some(BrokerInfo {
+                            id: broker_id.to_string(),
+                            name: broker_name.to_string(),
+                            broker_id: broker_broker_id.to_string(),
+                            td_address: broker
+                                .get("td_address")
+                                .and_then(|v| v.as_str())
+                                .map(|s| s.to_string()),
+                            md_address: broker
+                                .get("md_address")
+                                .and_then(|v| v.as_str())
+                                .map(|s| s.to_string()),
+                            auth_code: broker
+                                .get("auth_code")
+                                .and_then(|v| v.as_str())
+                                .map(|s| s.to_string()),
+                            app_id: broker
+                                .get("app_id")
+                                .and_then(|v| v.as_str())
+                                .map(|s| s.to_string()),
+                            user_product_info: broker
+                                .get("user_product_info")
+                                .and_then(|v| v.as_str())
+                                .map(|s| s.to_string()),
+                            description: broker
+                                .get("description")
+                                .and_then(|v| v.as_str())
+                                .unwrap_or("")
+                                .to_string(),
+                            recommended: broker
+                                .get("recommended")
+                                .and_then(|v| v.as_bool())
+                                .unwrap_or(false),
+                            category: broker
+                                .get("category")
+                                .and_then(|v| v.as_str())
+                                .unwrap_or("")
+                                .to_string(),
+                        })
+                    })
+                    .collect::<Vec<_>>()
+            });
+
+        exchanges.push(ExchangeConfig {
+            id: id.to_string(),
+            name: name.to_string(),
+            name_en: name_en.to_string(),
+            description: description.to_string(),
+            icon: icon.to_string(),
+            color: color.to_string(),
+            enabled,
+            status: status.to_string(),
+            route: route.to_string(),
+            api_endpoint: api_endpoint.to_string(),
+            features,
+            brokers,
+        });
+    }
 
     let response = ExchangesConfigResponse {
         exchanges,
         settings: serde_json::json!({
             "defaultExchange": "crypto",
-            "refreshInterval": config.settings.refresh_interval * 1000, // 转换为毫秒
-            "autoConnect": config.settings.auto_connect,
+            "refreshInterval": 30000,
+            "autoConnect": false,
         }),
     };
 

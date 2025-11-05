@@ -10,7 +10,6 @@ pub struct Config {
     pub database: DatabaseConfig,
     pub redis: RedisConfig,
     pub llm_providers: Vec<LlmProviderConfig>,
-    pub markets: Vec<MarketConfig>,
 }
 
 #[derive(Debug, Clone, Deserialize, Serialize)]
@@ -38,15 +37,6 @@ pub struct LlmProviderConfig {
     pub base_url: Option<String>,
 }
 
-#[derive(Debug, Clone, Deserialize, Serialize)]
-pub struct MarketConfig {
-    pub name: String,
-    #[serde(rename = "type")]
-    pub market_type: String,
-    pub symbols: Vec<String>,
-    pub enabled: bool,
-}
-
 impl Config {
     pub fn load() -> Result<Self, anyhow::Error> {
         // TODO: 从配置文件加载
@@ -65,7 +55,6 @@ impl Config {
                     .unwrap_or_else(|_| "redis://localhost:6379".to_string()),
             },
             llm_providers: vec![],
-            markets: vec![],
         })
     }
 }

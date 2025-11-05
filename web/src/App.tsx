@@ -9,6 +9,7 @@ import LeaderboardPage from "@/pages/LeaderboardPage";
 import ModelDetailPage from "@/pages/ModelDetailPage";
 import ModelsIndexPage from "@/pages/ModelsIndexPage";
 import CryptoExchangePage from "@/pages/CryptoExchangePage";
+import CtpBrokerSelectionPage from "@/pages/CtpBrokerSelectionPage";
 import CtpMonitorPage from "@/pages/CtpMonitorPage";
 import GenericExchangePage from "@/pages/GenericExchangePage";
 
@@ -26,7 +27,7 @@ interface ExchangesConfigResponse {
 // 交易所ID到组件的映射
 const EXCHANGE_COMPONENTS: Record<string, React.ComponentType> = {
   crypto: CryptoExchangePage,
-  ctp: CtpMonitorPage,
+  ctp: CtpBrokerSelectionPage,
 };
 
 function AppRoutes() {
@@ -60,6 +61,7 @@ function AppRoutes() {
   const routes = useRoutes([
     { path: "/", element: <HomePage /> },
     ...exchangeRoutes,
+    { path: "/ctp/monitor", element: <CtpMonitorPage /> },
     { path: "/leaderboard", element: <LeaderboardPage /> },
     { path: "/models", element: <ModelsIndexPage /> },
     { path: "/models/:id", element: <ModelDetailPage /> },

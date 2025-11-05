@@ -358,7 +358,7 @@ exchanges:
     description: "专业的加密货币衍生品交易平台"
     icon: "🐦"
     color: "#f7a600"
-    enabled: true
+    enabled: false
     status: "开发中"
     route: "/bybit"
     api_endpoint: "https://api.bybit.com"
@@ -375,7 +375,7 @@ exchanges:
     description: "老牌美国加密货币交易所"
     icon: "🐙"
     color: "#5741d9"
-    enabled: true
+    enabled: false
     status: "计划中"
     route: "/kraken"
     api_endpoint: "https://api.kraken.com"

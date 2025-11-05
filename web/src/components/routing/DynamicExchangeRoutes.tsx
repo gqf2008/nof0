@@ -1,6 +1,7 @@
 import { Route } from "react-router-dom";
 import { useEffect, useState } from "react";
 import CryptoExchangePage from "@/pages/CryptoExchangePage";
+import CtpBrokerSelectionPage from "@/pages/CtpBrokerSelectionPage";
 import CtpMonitorPage from "@/pages/CtpMonitorPage";
 import GenericExchangePage from "@/pages/GenericExchangePage";
 
@@ -18,7 +19,7 @@ interface ExchangesConfigResponse {
 // 交易所ID到组件的映射
 const EXCHANGE_COMPONENTS: Record<string, React.ComponentType> = {
   crypto: CryptoExchangePage,
-  ctp: CtpMonitorPage,
+  ctp: CtpBrokerSelectionPage, // CTP 先显示柜台选择页面
   // 其他交易所使用通用页面
 };
 
@@ -60,6 +61,8 @@ export default function DynamicExchangeRoutes() {
           />
         );
       })}
+      {/* CTP 监控页面（需要选择柜台后访问） */}
+      <Route path="/ctp/monitor" element={<CtpMonitorPage />} />
     </>
   );
 }
